@@ -6,6 +6,8 @@ const authRoute = require('./src/routes/authRoute');
 const attendanceRoute = require('./src/routes/attendanceRoute');
 const classRoute = require('./src/routes/classRoute');
 const userRoute = require('./src/routes/userRoute');
+const qrCodeRoute = require('./src/routes/qrCodeRoute');
+
 const app = express();
 const PORT = process.env.PORT||5000;
 
@@ -18,6 +20,7 @@ app.use('/auth', authRoute);
 app.use('/attendance', attendanceRoute);
 app.use('./class', classRoute);
 app.use('/users', userRoute);
+app.use('/attendance/qr', qrCodeRoute);
 
 app.get('/', (req, res)=>{
     res.send('Diem danh dang chay!');
