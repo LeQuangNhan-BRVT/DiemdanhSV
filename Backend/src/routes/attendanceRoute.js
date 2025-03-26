@@ -1,11 +1,19 @@
+// routes/attendanceRoutes.js
 const express = require('express');
 const router = express.Router();
 const attendanceController = require('../controllers/attendanceController');
-const { verifyToken, checkRole } = require('../middlewares/authMiddleware');
+const { protect, restrictTo } = require('../middlewares/authMiddleware');
 
-router.get('/sessions/:classId', verifyToken, attendanceController.getSessionsByClass);
-router.post('/sessions', verifyToken, checkRole(['admin', 'teacher']), attendanceController.createSession);
-router.get('/session/:sessionId', verifyToken, attendanceController.getAttendanceBySession);
-router.put('/:id', verifyToken, checkRole(['admin', 'teacher']), attendanceController.updateAttendance);
+// @route   POST /api/attendance/generate-qr
+// @desc    Generate QR code for a class
+// @access  Private (Teacher only)
+router.post('/generate-qr', protect, restrictTo('teacher'), attendanceController.generateQR);
+
+// @route   POST /api/attendance/check-in
+// @desc    Student checks in using QR code
+// @access  Private (Student only)
+router.post('/check-in', protect, restrictTo('student'), attendanceController.checkIn);
+
+// Thêm các routes khác để xem lịch sử điểm danh nếu cần
 
 module.exports = router;

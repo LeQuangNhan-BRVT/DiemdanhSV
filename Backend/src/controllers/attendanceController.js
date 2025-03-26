@@ -1,97 +1,132 @@
-const pool = require('../connections/db');
+// controllers/attendanceController.js
+const QRCode = require('qrcode');
+const db = require('../models');
+const Attendance = db.Attendance;
+const Class = db.Class;
+const Student = db.Student;
+const { Op } = require('sequelize');
 
-//lay ds buoi hoc
-exports.getSessionByClass = async(req, res)=>{
+// Tạo mã QR cho lớp học (Chỉ Teacher)
+exports.generateQR = async (req, res) => {
     try {
-        const {classId} = req.params;
-        const [sessions] = await pool.execute('SELECT * FROM sessions WHERE class_id = ? ORDER BY session_date DESC, start_time DESC',
-      [classId]);
+        const { classId } = req.body;
 
-      res.json(sessions);
+        if (!classId) {
+            return res.status(400).json({ error: "classId is required" });
+        }
+
+        // Kiểm tra xem người dùng có quyền dạy lớp này không (nếu cần logic phức tạp hơn)
+        // const isTeacherOfClass = await Class.findOne({ where: { id: classId, teacherId: req.user.id } });
+        // if (!isTeacherOfClass) {
+        //     return res.status(403).json({ error: "You are not authorized to generate QR for this class" });
+        // }
+
+        const classObj = await Class.findByPk(classId);
+        if (!classObj) {
+            return res.status(404).json({ error: "Class not found" });
+        }
+
+        const qrData = JSON.stringify({ classId, timestamp: Date.now() });
+
+        QRCode.toDataURL(qrData, (err, url) => {
+            if (err) {
+                console.error("QR Code Generation Error:", err);
+                return res.status(500).json({ error: "Error generating QR code" });
+            }
+            res.status(200).json({ qrCodeURL: url });
+        });
+
     } catch (error) {
-        console.log(error);
-        res.status(500).json({message: 'Server error!'});
+        console.error("generateQR Error:", error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 
-//Tao buoi hoc
-exports.createSession = async(req, res)=>{
-    const {class_id, session_date, start_time, end_time, session_title} = req.body;
-    //Check lop hoc va role
-    const[classes] = await pool.execute('SELECT * FROM classes WHERE id = ?', [class_id]);
-    if(classes.length === 0){
-        return res.status(404).json({message: 'Lop hoc khong ton tai'});
-    }
-    if(classes.user.role === 'teacher' && classes[0].teacher_id !== req.user.id){
-        return res.status(403).json({message: 'Ban khong co quyen tao buoi hoc nay'});
-    }
-    //tao buoi hoc moi
-    const [result] = await pool.execute(
-        'INSERT INTO sessions (class_id, session_date, start_time, end_time, session_title) VALUES (?, ?, ?, ?, ?)',
-        [class_id, session_date, start_time, end_time, session_title]
-      );
-     // Tạo điểm danh cho tất cả sinh viên trong lớp
-     const [students] = await pool.execute(
-        'SELECT student_id FROM class_enrollments WHERE class_id = ?',
-        [class_id]
-      );
-      
-      for (const student of students) {
-        await pool.execute(
-          'INSERT INTO attendance (session_id, student_id, status) VALUES (?, ?, ?)',
-          [result.insertId, student.student_id, 'absent']
-        );
-      }
-      
-      res.status(201).json({
-        id: result.insertId,
-        class_id,
-        session_date,
-        start_time,
-        end_time,
-        session_title
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Lỗi server' });
-    }
-  };
-  
-  // Lấy danh sách điểm danh của một buổi học
-  exports.getAttendanceBySession = async (req, res) => {
+// Sinh viên điểm danh (Chỉ Student)
+exports.checkIn = async (req, res) => {
     try {
-      const { sessionId } = req.params;
-      
-      const [attendance] = await pool.execute(`
-        SELECT a.*, u.full_name, u.username 
-        FROM attendance a
-        JOIN users u ON a.student_id = u.id
-        WHERE a.session_id = ?
-      `, [sessionId]);
-      
-      res.json(attendance);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Lỗi server' });
-    }
-  };
-  
-  // Cập nhật trạng thái điểm danh
-  exports.updateAttendance = async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { status, note } = req.body;
-      
-      await pool.execute(
-        'UPDATE attendance SET status = ?, note = ?, check_in_time = CURRENT_TIMESTAMP WHERE id = ?',
-        [status, note, id]
-      );
-      
-      res.json({ message: 'Cập nhật điểm danh thành công' });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Lỗi server' });
-    }
+        const { qrData } = req.body;
+        const studentUserId = req.user.id; // Lấy user ID từ token JWT
 
+        if (!qrData) {
+            return res.status(400).json({ error: "qrData is required" });
+        }
 
+        // Tìm sinh viên dựa trên userId từ token
+        const studentObj = await Student.findOne({ where: { userId: studentUserId } });
+        if (!studentObj) {
+            // Lỗi này không nên xảy ra nếu token hợp lệ và có student tương ứng
+             return res.status(404).json({ error: 'Student record not found for this user.' });
+        }
+        const studentDbId = studentObj.id; // ID của bản ghi Student trong database
+
+        let decodedData;
+        try {
+           decodedData = JSON.parse(qrData);
+        } catch (parseError) {
+             return res.status(400).json({ error: 'Invalid QR code data format' });
+        }
+
+        const { classId, timestamp } = decodedData;
+
+        // Kiểm tra xem timestamp có hợp lệ không
+        if (typeof timestamp !== 'number' || timestamp > Date.now()) {
+             return res.status(400).json({ error: 'Invalid timestamp in QR code' });
+        }
+
+        // Kiểm tra thời gian hết hạn của QR code (ví dụ: 15 phút)
+        const timeDifference = Date.now() - timestamp;
+        const QR_EXPIRY_MS = 15 * 60 * 1000; // 15 phút
+        if (timeDifference > QR_EXPIRY_MS) {
+            return res.status(400).json({ error: "QR code expired" });
+        }
+
+        // Kiểm tra lớp học có tồn tại không
+        const classObj = await Class.findByPk(classId);
+        if (!classObj) {
+            return res.status(404).json({ error: 'Class specified in QR code not found' });
+        }
+
+        // Kiểm tra xem sinh viên có thuộc lớp học này không
+        const isStudentInClass = await classObj.hasStudent(studentObj);
+        if (!isStudentInClass) {
+            return res.status(403).json({ error: 'You are not enrolled in this class' });
+        }
+
+        // Kiểm tra xem sinh viên đã điểm danh cho lớp này vào ngày hôm nay chưa
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999);
+
+        const existingAttendance = await Attendance.findOne({
+            where: {
+                classId: classId,
+                studentId: studentDbId, // Dùng ID của bảng Student
+                date: { // Tìm trong khoảng thời gian của ngày hôm nay
+                    [Op.between]: [todayStart, todayEnd],
+                },
+            },
+        });
+
+        if (existingAttendance) {
+            return res.status(400).json({ error: 'Already checked in for this class today' });
+        }
+
+        // Tạo bản ghi điểm danh mới
+        const newAttendance = await Attendance.create({
+            classId: classId,
+            studentId: studentDbId,
+            // date được tự động thêm bởi defaultValue
+        });
+
+        res.status(200).json({ message: 'Check-in successful', attendance: newAttendance });
+
+    } catch (error) {
+        console.error("Check-in error:", error);
+        // Bắt các lỗi cụ thể khác nếu cần
+        res.status(500).json({ error: 'Internal Server Error during check-in' });
+    }
 };
+
+// Có thể thêm các hàm xem lịch sử điểm danh (cho student, teacher, admin)
