@@ -33,6 +33,16 @@ module.exports = (sequelize, DataTypes) => {
             },
             as: 'studentInfo' // Alias
         });
+        // Một bản ghi Attendance (có thể) thuộc về một Buổi học cụ thể
+        Attendance.belongsTo(models.ClassSchedule, {
+            foreignKey: {
+               name: 'scheduleId', // Tên cột khóa ngoại sẽ được tạo trong bảng Attendances
+               allowNull: true     // Cho phép null. Có thể bạn muốn điểm danh không theo lịch?
+                                   // Nếu bắt buộc điểm danh phải theo lịch, đặt là false
+                                   // và đảm bảo logic checkIn luôn tìm được schedule
+            },
+            as: 'scheduleInfo' // Alias để truy cập thông tin buổi học từ điểm danh
+       });
     };
 
     return Attendance;

@@ -4,34 +4,30 @@ const router = express.Router();
 const classController = require('../controllers/classController');
 const { protect, restrictTo } = require('../middlewares/authMiddleware');
 
-// Áp dụng middleware bảo vệ và giới hạn quyền cho tất cả các route trong file này
+// Áp dụng middleware bảo vệ và giới hạn quyền cho tất cả các route quản lý Class
+// Chỉ Admin và Teacher mới được quản lý Class và Schedule
 router.use(protect, restrictTo('admin', 'teacher'));
 
-// @route   POST /api/classes
-// @desc    Create a new class
-// @access  Private (Admin, Teacher)
+// --- Routes cho Class ---
 router.post('/', classController.createClass);
-
-// @route   GET /api/classes
-// @desc    Get all classes
-// @access  Private (Admin, Teacher)
 router.get('/', classController.getAllClasses);
-
-// @route   GET /api/classes/:id
-// @desc    Get a single class by ID
-// @access  Private (Admin, Teacher)
 router.get('/:id', classController.getClassById);
+// router.put('/:id', classController.updateClass); // Thêm nếu cần
+// router.delete('/:id', classController.deleteClass); // Thêm nếu cần
 
-// @route   POST /api/classes/:classId/students/:studentId
-// @desc    Add a student to a class
-// @access  Private (Admin, Teacher)
+// --- Routes thêm/xóa Student khỏi Class ---
 router.post('/:classId/students/:studentId', classController.addStudentToClass);
-
-// @route   DELETE /api/classes/:classId/students/:studentId
-// @desc    Remove a student from a class
-// @access  Private (Admin, Teacher)
 router.delete('/:classId/students/:studentId', classController.removeStudentFromClass);
 
-// Thêm các routes khác (PUT /:id, DELETE /:id)
+
+// Tạo lịch học mới cho lớp :classId
+router.post('/:classId/schedules', classController.createSchedule);
+// Lấy tất cả lịch học của lớp :classId
+router.get('/:classId/schedules', classController.getClassSchedules);
+// Cập nhật lịch học :scheduleId của lớp :classId
+router.put('/:classId/schedules/:scheduleId', classController.updateSchedule);
+// Xóa lịch học :scheduleId của lớp :classId
+router.delete('/:classId/schedules/:scheduleId', classController.deleteSchedule);
+
 
 module.exports = router;

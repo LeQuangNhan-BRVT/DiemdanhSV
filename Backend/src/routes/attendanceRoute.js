@@ -14,6 +14,7 @@ router.post('/generate-qr', protect, restrictTo('teacher'), attendanceController
 // @access  Private (Student only)
 router.post('/check-in', protect, restrictTo('student'), attendanceController.checkIn);
 
-// Thêm các routes khác để xem lịch sử điểm danh nếu cần
+router.get('/my-history', protect, restrictTo('student'), attendanceController.getStudentHistory);
+router.get('/history/:classId', protect, restrictTo('student'), attendanceController.getStudentClassHistory);
 
 module.exports = router;
