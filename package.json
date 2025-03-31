@@ -9,14 +9,17 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
-  "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.0",
-    "@fontsource/montserrat": "^5.2.5",
-    "@mui/material": "^6.4.7",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  },
+    "dependencies": {
+      "@emotion/react": "^11.14.0",
+      "@emotion/styled": "^11.14.0",
+      "@fontsource/montserrat": "^5.2.5",
+      "@mui/material": "^6.4.7",
+      "axios": "^1.8.4",
+      "qrcode.react": "^4.2.0",
+      "react": "^19.0.0",
+      "react-dom": "^19.0.0",
+      "react-router-dom": "^7.4.1"
+    },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
     "@types/react": "^19.0.10",

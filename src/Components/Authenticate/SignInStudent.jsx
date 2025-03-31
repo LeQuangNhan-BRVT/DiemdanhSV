@@ -1,15 +1,32 @@
 import React, { useState } from "react";
 import "./Stu.css";
-
+import api from "../../services/api";
 export default (props) => {
   const [input1, setInput1] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false); // Thêm state loading
+  const [error, setError] = useState(""); // Thêm state error
+  const handleLogin = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-  const handleLogin = () => {
-    // Add your login logic here
-    alert("Login attempted with MSSV: " + input1);
+      // Gọi API đăng nhập
+      const response = await api.post("/auth/login", {
+        username: input1,
+        password: password,
+      });
+
+      // Lưu token và chuyển hướng
+      localStorage.setItem("token", response.data.token);
+      window.location.href = "/dashboard";
+    } catch (err) {
+      setError("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!");
+      console.error("Login error:", err.response?.data);
+    } finally {
+      setLoading(false);
+    }
   };
-
   return (
     <div className="contain">
       <div
@@ -73,9 +90,17 @@ export default (props) => {
                   />
                 </div>
               </div>
-
-              <button className="login-button" onClick={handleLogin}>
-                <span className="button-text">Đăng nhập</span>
+              {error && <div className="error-message">{error}</div>}
+              <button
+                className="login-button"
+                onClick={handleLogin}
+                disabled={loading} // Thêm trạng thái disabled
+              >
+                {loading ? (
+                  <span className="button-text">Đang xử lý...</span>
+                ) : (
+                  <span className="button-text">Đăng nhập</span>
+                )}
               </button>
 
               <button

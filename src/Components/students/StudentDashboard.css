@@ -1,0 +1,429 @@
+/* StudentDashboard.css */
+.app-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #7dd3fc 0%, #bae6fd 100%);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Thêm hiệu ứng pattern overlay */
+.app-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,0.2) 0%, transparent 20%),
+    radial-gradient(circle at 80% 80%, rgba(186, 230, 253, 0.2) 0%, transparent 20%);
+  background-size: 100px 100px;
+  opacity: 0.3;
+}
+
+/* Modern glass effect header */
+.header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 1.25rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  background: linear-gradient(to right, #0ea5e9, #7dd3fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.logo i {
+  font-size: 2rem;
+  color: #0ea5e9;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.user-details {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 30px;
+  backdrop-filter: blur(5px);
+}
+
+.user-details i {
+  color: #0ea5e9;
+}
+
+.logout-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(to right, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);
+}
+
+.logout-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+}
+
+/* Main layout */
+.main-layout {
+  display: flex;
+  padding: 2rem;
+  gap: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Modern navigation */
+.navigation {
+  width: 280px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 1.5rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  color: #6b7280;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.nav-button:hover {
+  background: rgba(186, 230, 253, 0.3);
+  color: #0ea5e9;
+  transform: translateX(5px);
+}
+
+.nav-button.active {
+  background: linear-gradient(to right, #7dd3fc, #bae6fd);
+  color: #0369a1;
+  box-shadow: 0 4px 15px rgba(125, 211, 252, 0.3);
+}
+
+.nav-button i {
+  font-size: 1.25rem;
+}
+
+/* Content area */
+.main-content {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 2rem;
+  min-height: 80vh;
+}
+
+/* QR Code styles */
+.qr-container {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 20px;
+}
+
+.qr-container h2 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 20px;
+}
+
+.qr-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.qr-image {
+  width: 200px;
+  height: 200px;
+}
+
+.download-button {
+  background: linear-gradient(to right, #7dd3fc, #bae6fd);
+  color: #0369a1;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.download-button:hover {
+  background: linear-gradient(to right, #38bdf8, #7dd3fc);
+}
+
+/* Profile styles */
+.student-info-container {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 20px;
+}
+
+.student-info-container h2 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 20px;
+}
+
+.info-card {
+  background: white;
+}
+
+.info-details {
+  display: grid;
+  gap: 15px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-item label {
+  color: #666;
+  font-weight: 500;
+}
+
+.info-item span {
+  color: #333;
+}
+
+/* Attendance styles */
+.attendance-container {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 20px;
+}
+
+.attendance-container h2 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 20px;
+}
+
+.attendance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.attendance-item {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 15px;
+}
+
+.attendance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.attendance-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.attendance-status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.attendance-status.present {
+  background: #d4edda;
+  color: #155724;
+}
+
+.attendance-status.absent {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.attendance-details p {
+  margin: 5px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+/* Schedule styles */
+.schedule-container {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 20px;
+}
+
+.schedule-container h2 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 20px;
+}
+
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.schedule-item {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 15px;
+}
+
+.schedule-item h3 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.schedule-item p {
+  margin: 5px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+/* Hiệu ứng hover cho các item */
+.info-item:hover,
+.attendance-item:hover,
+.schedule-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* Style cho buttons */
+.edit-button,
+.download-button {
+  background: linear-gradient(to right, #7dd3fc, #bae6fd);
+  color: #0369a1;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.edit-button:hover,
+.download-button:hover {
+  background: linear-gradient(to right, #38bdf8, #7dd3fc);
+}
+
+/* Style cho status badges */
+.status-active {
+  background: #7dd3fc;
+  color: #0369a1;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+}
+
+.status-present {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.status-absent {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.info-item i,
+.course-name i,
+.class-time i,
+.room-number i {
+  color: #0ea5e9;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .main-layout {
+    flex-direction: column;
+  }
+
+  .navigation {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .user-info {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .main-layout {
+    padding: 1rem;
+  }
+
+  .main-content {
+    padding: 1rem;
+  }
+}
+  
