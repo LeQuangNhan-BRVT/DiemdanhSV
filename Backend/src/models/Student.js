@@ -71,7 +71,7 @@ module.exports = (sequelize, DataTypes) => {
             through: 'ClassStudent',
             foreignKey: 'studentId',
             otherKey: 'classId',
-            as: 'classes' // Alias để truy cập (vd: student.getClasses())
+            as: 'classes' // Định nghĩa alias
         });
     };
 

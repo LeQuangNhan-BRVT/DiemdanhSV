@@ -8,39 +8,69 @@ const ClassSchedule = db.ClassSchedule;
 const { Op } = require('sequelize');
 
 // Tạo mã QR cho lớp học (Chỉ Teacher)
+// exports.generateQR = async (req, res) => {
+//     try {
+//         const { classId } = req.body;
+
+//         if (!classId) {
+//             return res.status(400).json({ error: "classId is required" });
+//         }
+
+//         // Kiểm tra xem người dùng có quyền dạy lớp này không (nếu cần logic phức tạp hơn)
+//         // const isTeacherOfClass = await Class.findOne({ where: { id: classId, teacherId: req.user.id } });
+//         // if (!isTeacherOfClass) {
+//         //     return res.status(403).json({ error: "You are not authorized to generate QR for this class" });
+//         // }
+
+//         const classObj = await Class.findByPk(classId);
+//         if (!classObj) {
+//             return res.status(404).json({ error: "Class not found" });
+//         }
+
+//         const qrData = JSON.stringify({ classId, timestamp: Date.now() });
+
+//         QRCode.toDataURL(qrData, (err, url) => {
+//             if (err) {
+//                 console.error("QR Code Generation Error:", err);
+//                 return res.status(500).json({ error: "Error generating QR code" });
+//             }
+//             res.status(200).json({ qrCodeURL: url });
+//         });
+
+//     } catch (error) {
+//         console.error("generateQR Error:", error);
+//         res.status(500).json({ error: 'Internal Server Error' });
+//     }
+// };
 exports.generateQR = async (req, res) => {
-    try {
-        const { classId } = req.body;
+  try {
+      const { classId, scheduleId, timestamp, token } = req.body;
 
-        if (!classId) {
-            return res.status(400).json({ error: "classId is required" });
-        }
+      if (!classId || !scheduleId) {
+          return res.status(400).json({ error: "classId và scheduleId là bắt buộc" });
+      }
 
-        // Kiểm tra xem người dùng có quyền dạy lớp này không (nếu cần logic phức tạp hơn)
-        // const isTeacherOfClass = await Class.findOne({ where: { id: classId, teacherId: req.user.id } });
-        // if (!isTeacherOfClass) {
-        //     return res.status(403).json({ error: "You are not authorized to generate QR for this class" });
-        // }
+      // Tạo QR data
+      const qrData = JSON.stringify({
+          classId,
+          scheduleId,
+          timestamp,
+          token
+      });
 
-        const classObj = await Class.findByPk(classId);
-        if (!classObj) {
-            return res.status(404).json({ error: "Class not found" });
-        }
+      // Tạo QR code
+      QRCode.toDataURL(qrData, (err, url) => {
+          if (err) {
+              console.error("QR Generation Error:", err);
+              return res.status(500).json({ error: "Lỗi khi tạo mã QR" });
+          }
+          res.json({ qrCodeURL: url });
+      });
 
-        const qrData = JSON.stringify({ classId, timestamp: Date.now() });
-
-        QRCode.toDataURL(qrData, (err, url) => {
-            if (err) {
-                console.error("QR Code Generation Error:", err);
-                return res.status(500).json({ error: "Error generating QR code" });
-            }
-            res.status(200).json({ qrCodeURL: url });
-        });
-
-    } catch (error) {
-        console.error("generateQR Error:", error);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
+  } catch (error) {
+      console.error("generateQR Error:", error);
+      res.status(500).json({ error: 'Internal Server Error' });
+  }
 };
 
 // Sinh viên điểm danh (Chỉ Student)

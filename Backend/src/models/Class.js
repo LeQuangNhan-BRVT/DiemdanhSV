@@ -49,7 +49,7 @@ module.exports = (sequelize, DataTypes) => {
       through: "ClassStudent",
       foreignKey: "classId",
       otherKey: "studentId",
-      as: "students",
+      as: "Students",
     });
 
     

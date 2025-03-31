@@ -49,11 +49,17 @@ exports.getAllClasses = async (req, res) => {
       include: [
         {
           model: Student,
-          attributes: ["id", "name", "studentId"], // Chỉ lấy các trường cần thiết của Student
-          through: { attributes: [] }, // Không lấy các cột của bảng trung gian
+          as: 'Students', // Thêm alias 'students' theo như đã định nghĩa trong model
+          attributes: ['id', 'name', 'studentId'], // Chỉ lấy các trường cần thiết
+          through: { attributes: [] }, // Không lấy các trường của bảng trung gian
         },
+        {
+          model: User,
+          as: 'Teacher', // Thêm alias 'Teacher' theo như đã định nghĩa trong model
+          attributes: ['id', 'username'], // Chỉ lấy các trường cần thiết
+        }
       ],
-      order: [["createdAt", "DESC"]], // Sắp xếp theo thời gian tạo mới nhất
+      order: [['createdAt', 'DESC']], // Sắp xếp theo thời gian tạo mới nhất
     });
     res.json(classes);
   } catch (err) {
