@@ -358,4 +358,34 @@ video {
     margin: 0;
     border-radius: 0;
   }
+}
+
+.scanner-toggle-btn {
+  display: block;
+  width: 200px;
+  margin: 20px auto;
+  padding: 12px 24px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.scanner-toggle-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.scanner-toggle-btn.active {
+  background: #dc2626;
+}
+
+.scanner-toggle-btn.active:hover {
+  background: #b91c1c;
 } 

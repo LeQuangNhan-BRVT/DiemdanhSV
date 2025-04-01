@@ -7,6 +7,29 @@ const QRScanner = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [lastScanTime, setLastScanTime] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
+  const [scanner, setScanner] = useState(null);
+  const [isScanning, setIsScanning] = useState(false);
+
+  // Xử lý khi component mount
+  useEffect(() => {
+    setIsVisible(true);
+    return () => {
+      setIsVisible(false);
+    };
+  }, []);
+
+  // Xử lý khi tab thay đổi
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsVisible(document.visibilityState === 'visible');
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -14,13 +37,23 @@ const QRScanner = () => {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
 
-    const scanner = new Html5QrcodeScanner('reader', {
+    if (!isVisible || !isScanning) {
+      if (scanner) {
+        scanner.clear();
+        setScanner(null);
+      }
+      return;
+    }
+
+    const qrScanner = new Html5QrcodeScanner('reader', {
       qrbox: {
         width: 250,
         height: 250,
       },
       fps: 5,
     });
+
+    setScanner(qrScanner);
 
     const onScanSuccess = async (decodedText) => {
       try {
@@ -52,11 +85,11 @@ const QRScanner = () => {
         setError(null);
         
         // Tạm dừng scanner
-        scanner.pause();
+        qrScanner.pause();
         
         setTimeout(() => {
           setSuccess(null);
-          scanner.resume();
+          qrScanner.resume();
         }, 3000);
 
       } catch (err) {
@@ -89,21 +122,43 @@ const QRScanner = () => {
       }
     };
 
-    scanner.render(onScanSuccess, (err) => {
+    qrScanner.render(onScanSuccess, (err) => {
       console.error('Scanner error:', err);
       setError('Không thể truy cập camera');
     });
 
     return () => {
-      scanner.clear();
+      if (qrScanner) {
+        qrScanner.clear();
+        setScanner(null);
+      }
     };
-  }, [lastScanTime]);
+  }, [lastScanTime, isVisible, isScanning]);
+
+  const toggleScanner = () => {
+    if (isScanning) {
+      setIsScanning(false);
+      setIsVisible(false);
+    } else {
+      setIsScanning(true);
+      setIsVisible(true);
+    }
+  };
 
   return (
     <div className="qr-scanner-container">
       <h2>Quét mã QR để điểm danh</h2>
       
-      <div id="reader" className="scanner-wrapper"></div>
+      <button 
+        className={`scanner-toggle-btn ${isScanning ? 'active' : ''}`}
+        onClick={toggleScanner}
+      >
+        {isScanning ? 'Tắt Camera' : 'Bật Camera'}
+      </button>
+
+      {isVisible && isScanning && (
+        <div id="reader" className="scanner-wrapper"></div>
+      )}
 
       {error && (
         <div className="error-message">
