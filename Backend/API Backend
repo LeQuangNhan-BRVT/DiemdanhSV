@@ -1,0 +1,606 @@
+//Nhập file này vào Postman để test
+
+{
+	"info": {
+		"_postman_id": "a287bd89-e6ea-4caf-93fc-4682bdd72fbc",
+		"name": "Điểm danh sinh viên",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "40061337"
+	},
+	"item": [
+		{
+			"name": "Đăng nhập admin",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"username\": \"admin123\",\r\n    \"password\": \"admin123\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/auth/admin/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"auth",
+						"admin",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Tạo tài khoản giáo viên",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzQzNTg1NTc1LCJleHAiOjE3NDM1ODkxNzV9.VCwbE53I4ScHRij3PgqEtUP5EMRvZ3rIvRw3_6f3Szo",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"username\": \"GVTEST1\",\r\n    \"password\": \"gvtest1\",\r\n    \"role\": \"teacher\",\r\n    \"email\": \"gvtest1@gmail.com\"\r\n    //phải đăng nhập tk admin trước rồi lấy jwt token thêm vào Auth cái Bearer Token ấy\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/admin/users",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"admin",
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Tạo tài khoản SV",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzQzNTg1NTc1LCJleHAiOjE3NDM1ODkxNzV9.VCwbE53I4ScHRij3PgqEtUP5EMRvZ3rIvRw3_6f3Szo",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"username\": \"DH52111412\", \r\n    \"password\": \"DH52111412\",\r\n    \"role\": \"student\",\r\n    \"studentId\": \"DH52111412\", \r\n    \"name\": \"Thử coi sao\", \r\n    \"email\": \"DH52111412@student.stu.edu.vn\"\r\n    //lấy token admin để tạo tài khoản sv và gv\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/admin/users",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"admin",
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Giáo viên login",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"username\": \"GVTEST1\",\r\n    \"password\": \"gvtest1\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/auth/teacher/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"auth",
+						"teacher",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Tạo lớp học",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Niwicm9sZSI6InRlYWNoZXIiLCJpYXQiOjE3NDM1OTA0MjAsImV4cCI6MTc0MzU5NDAyMH0.3PZYAAeUG0HZPkMnv6EKF-L-EPS_cBNpJnAGNHQBkbQ",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"Android - D21_TH02\"\r\n    //thêm token giáo viên vào để tạo\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/classes",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"classes"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Thêm sv vào lớp, lấy token gv thêm vào",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Niwicm9sZSI6InRlYWNoZXIiLCJpYXQiOjE3NDM1OTAwMjYsImV4cCI6MTc0MzU5MzYyNn0.wCjlyRCwJOfy-5RcAb2DEepXA2tNjBfGHhqR_gc-oGo",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/classes/4/students/2",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"classes",
+						"4",
+						"students",
+						"2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Tạo buổi học",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Niwicm9sZSI6InRlYWNoZXIiLCJpYXQiOjE3NDM1OTA0MjAsImV4cCI6MTc0MzU5NDAyMH0.3PZYAAeUG0HZPkMnv6EKF-L-EPS_cBNpJnAGNHQBkbQ",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"dayOfWeek\": 6,   // Thay bằng ngày hôm nay\r\n    \"startTime\": \"07:00:00\", // Thay bằng giờ phù hợp\r\n    \"endTime\": \"11:00:00\"    // Thay bằng giờ phù hợp\r\n    //lấy token giáo viên thêm vào\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/classes/4/schedules",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"classes",
+						"4",
+						"schedules"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Tạo QR by Teacher",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Niwicm9sZSI6InRlYWNoZXIiLCJpYXQiOjE3NDM1OTIzOTAsImV4cCI6MTc0MzU5NTk5MH0.CwdYSxq_jonJW5ZJ1Y9dGS-7__2FVZcHNLXVMYdTZVI",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"classId\": \"6\",\r\n    \"scheduleId\": \"23\"\r\n    //giáo viên của lớp nào thì mới tạo được QR lớp đó\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/attendance/generate-qr",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"attendance",
+						"generate-qr"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "SV điểm danh, login",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"username\": \"DH52111411\", // Username là studentId\r\n    \"password\": \"DH52111411\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/auth/student/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"auth",
+						"student",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Điểm danh",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwicm9sZSI6InN0dWRlbnQiLCJzdHVkZW50SWQiOiJESDUyMTExNDExIiwiaWF0IjoxNzQzNTkyNDA5LCJleHAiOjE3NDM1OTYwMDl9.Cb1-bbYB6Y_IkGv1evNxtoc-ms15hPWi7JZuV1N209Y",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n        \"qrData\": \"{\\\"classId\\\":4,\\\"scheduleId\\\":6,\\\"timestamp\\\":1743593298725}\"\r\n        //lấy token giáo viên\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/attendance/check-in",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"attendance",
+						"check-in"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Xem lịch học by TokenTeacher",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Miwicm9sZSI6InRlYWNoZXIiLCJpYXQiOjE3NDM0NDM4MTgsImV4cCI6MTc0MzQ0NzQxOH0.aQ-aKqL7iY1EDAqoRPIWOOSpHSN8FvcyOxiPfAbo-ms",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/api/classes/3/schedules",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"classes",
+						"3",
+						"schedules"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "xem lịch sử điểm danh, token student",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6InN0dWRlbnQiLCJzdHVkZW50SWQiOiJESDUyMTExNDAxIiwiaWF0IjoxNzQzMDc1OTk4LCJleHAiOjE3NDMwNzk1OTh9.RootbruCIBiI-OA4AXYeIBmIgvYoXgrWb9IHiTLuwEo",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/attendance/my-history",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"attendance",
+						"my-history"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get all classes by token gv",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Niwicm9sZSI6InRlYWNoZXIiLCJpYXQiOjE3NDM1ODU3NTYsImV4cCI6MTc0MzU4OTM1Nn0.wENoUtiREWVzjRILvWuIEzCz9wl1snTJjTy3MZDupvI",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/classes/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"classes",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update student pass, email, lấy token student",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6InN0dWRlbnQiLCJzdHVkZW50SWQiOiJESDUyMTExNDAxIiwiaWF0IjoxNzQzNTg5MzY1LCJleHAiOjE3NDM1OTI5NjV9.BYElbw894-9rTGva42P35N4OK1bsn8K08FG3IC2QrdY",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"currentPassword\": \"DH521114012\",  // Chỉ cần khi đổi mật khẩu\r\n  \"newPassword\": \"DH52111401\",           // Tùy chọn\r\n  \"email\": \"DH52111401@student.stu.edu.vn\"         // Tùy chọn\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/students/DH52111401/profile",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"students",
+						"DH52111401",
+						"profile"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Lấy thông tin sv, token gv",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Niwicm9sZSI6InRlYWNoZXIiLCJpYXQiOjE3NDM1ODU3NTYsImV4cCI6MTc0MzU4OTM1Nn0.wENoUtiREWVzjRILvWuIEzCz9wl1snTJjTy3MZDupvI",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/students/DH52111401",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"students",
+						"DH52111401"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get all SV, token gv, admin đều được",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Niwicm9sZSI6InRlYWNoZXIiLCJpYXQiOjE3NDM1ODU3NTYsImV4cCI6MTc0MzU4OTM1Nn0.wENoUtiREWVzjRILvWuIEzCz9wl1snTJjTy3MZDupvI",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/api/students",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"students"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
