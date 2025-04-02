@@ -17,4 +17,11 @@ router.post('/check-in', protect, restrictTo('student'), attendanceController.ch
 router.get('/my-history', protect, restrictTo('student'), attendanceController.getStudentHistory);
 router.get('/history/:classId', protect, restrictTo('student'), attendanceController.getStudentClassHistory);
 
+// Route cho giáo viên tùy chỉnh thời gian điểm danh
+router.put('/schedule/attendance-time', 
+    protect, 
+    restrictTo('admin', 'teacher'), 
+    attendanceController.updateAttendanceTime
+);
+
 module.exports = router;

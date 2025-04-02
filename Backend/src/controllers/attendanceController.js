@@ -7,211 +7,227 @@ const Student = db.Student;
 const ClassSchedule = db.ClassSchedule;
 const { Op } = require('sequelize');
 
-// Tạo mã QR cho lớp học (Chỉ Teacher)
-// exports.generateQR = async (req, res) => {
-//     try {
-//         const { classId } = req.body;
-
-//         if (!classId) {
-//             return res.status(400).json({ error: "classId is required" });
-//         }
-
-//         // Kiểm tra xem người dùng có quyền dạy lớp này không (nếu cần logic phức tạp hơn)
-//         // const isTeacherOfClass = await Class.findOne({ where: { id: classId, teacherId: req.user.id } });
-//         // if (!isTeacherOfClass) {
-//         //     return res.status(403).json({ error: "You are not authorized to generate QR for this class" });
-//         // }
-
-//         const classObj = await Class.findByPk(classId);
-//         if (!classObj) {
-//             return res.status(404).json({ error: "Class not found" });
-//         }
-
-//         const qrData = JSON.stringify({ classId, timestamp: Date.now() });
-
-//         QRCode.toDataURL(qrData, (err, url) => {
-//             if (err) {
-//                 console.error("QR Code Generation Error:", err);
-//                 return res.status(500).json({ error: "Error generating QR code" });
-//             }
-//             res.status(200).json({ qrCodeURL: url });
-//         });
-
-//     } catch (error) {
-//         console.error("generateQR Error:", error);
-//         res.status(500).json({ error: 'Internal Server Error' });
-//     }
-// };
+// Tạo mã QR cho buổi học
 exports.generateQR = async (req, res) => {
-  try {
-      const { classId, scheduleId, timestamp, token } = req.body;
+    try {
+        const { classId, scheduleId } = req.body;
 
-      if (!classId || !scheduleId) {
-          return res.status(400).json({ error: "classId và scheduleId là bắt buộc" });
-      }
+        if (!classId || !scheduleId) {
+            return res.status(400).json({ error: "classId và scheduleId là bắt buộc" });
+        }
 
-      // Tạo QR data
-      const qrData = JSON.stringify({
-          classId,
-          scheduleId,
-          timestamp,
-          token
-      });
+        // Kiểm tra quyền truy cập
+        if (req.user.role !== 'admin' && req.user.role !== 'teacher') {
+            return res.status(403).json({ error: 'Bạn không có quyền tạo mã QR' });
+        }
 
-      // Tạo QR code
-      QRCode.toDataURL(qrData, (err, url) => {
-          if (err) {
-              console.error("QR Generation Error:", err);
-              return res.status(500).json({ error: "Lỗi khi tạo mã QR" });
-          }
-          res.json({ qrCodeURL: url });
-      });
+        // Kiểm tra lớp học và buổi học
+        const classInfo = await db.Class.findOne({
+            where: { id: classId }
+        });
 
-  } catch (error) {
-      console.error("generateQR Error:", error);
-      res.status(500).json({ error: 'Internal Server Error' });
-  }
+        if (!classInfo) {
+            return res.status(404).json({ error: 'Không tìm thấy lớp học' });
+        }
+
+        // Kiểm tra nếu là giáo viên thì phải là giáo viên của lớp đó
+        if (req.user.role === 'teacher' && req.user.id !== classInfo.teacherId) {
+            return res.status(403).json({ error: 'Bạn không phải là giáo viên của lớp này' });
+        }
+
+        const schedule = await db.ClassSchedule.findOne({
+            where: { 
+                id: scheduleId,
+                classId: classId
+            }
+        });
+
+        if (!schedule) {
+            return res.status(404).json({ error: 'Không tìm thấy buổi học' });
+        }
+
+        // Tạo QR data với timestamp hiện tại
+        const timestamp = Date.now();
+        const qrData = JSON.stringify({
+            classId,
+            scheduleId,
+            timestamp
+        });
+
+        // Tạo QR code
+        QRCode.toDataURL(qrData, (err, url) => {
+            if (err) {
+                console.error("QR Generation Error:", err);
+                return res.status(500).json({ error: "Lỗi khi tạo mã QR" });
+            }
+            res.json({ 
+                qrCodeURL: url,
+                expiresAt: timestamp + (15 * 60 * 1000) // Hết hạn sau 15 phút
+            });
+        });
+
+    } catch (error) {
+        console.error("generateQR Error:", error);
+        res.status(500).json({ error: 'Lỗi server khi tạo mã QR' });
+    }
 };
 
-// Sinh viên điểm danh (Chỉ Student)
+// Sinh viên điểm danh
 exports.checkIn = async (req, res) => {
     const transaction = await db.sequelize.transaction();
     try {
         const { qrData } = req.body;
-        const studentUserId = req.user.id; // Lấy user ID từ token
+        const studentUserId = req.user.id;
 
         if (!qrData) {
             await transaction.rollback();
-            return res.status(400).json({ error: "qrData is required" });
+            return res.status(400).json({ error: "qrData là bắt buộc" });
         }
 
-        // 1. Tìm bản ghi Student tương ứng
-        const studentObj = await Student.findOne({ where: { userId: studentUserId }, transaction });
-        if (!studentObj) {
-            await transaction.rollback();
-            return res.status(404).json({ error: 'Student record not found for this user account.' });
-        }
-        const studentDbId = studentObj.id;
-
-        // 2. Giải mã và kiểm tra định dạng QR Data
+        // Giải mã QR data
         let decodedData;
         try {
-           decodedData = JSON.parse(qrData);
-           if (!decodedData || typeof decodedData.classId !== 'number' || typeof decodedData.timestamp !== 'number') {
-                throw new Error('Invalid QR data structure');
-           }
+            decodedData = JSON.parse(qrData);
+            if (!decodedData || !decodedData.classId || !decodedData.scheduleId || !decodedData.timestamp) {
+                throw new Error('Dữ liệu QR không hợp lệ');
+            }
         } catch (parseError) {
             await transaction.rollback();
-            console.error("QR Data Parse Error:", parseError.message);
-            return res.status(400).json({ error: 'Invalid or corrupted QR code data' });
-        }
-        const { classId, timestamp } = decodedData;
-
-        // 3. Kiểm tra timestamp hợp lệ (không phải tương lai)
-        if (timestamp > Date.now()) {
-            await transaction.rollback();
-            return res.status(400).json({ error: 'Invalid timestamp in QR code (future date)' });
+            return res.status(400).json({ error: 'Dữ liệu QR không hợp lệ' });
         }
 
-        // 4. Kiểm tra thời hạn QR code
-        const QR_EXPIRY_MINUTES = 15; // Đặt thời gian hết hạn QR (ví dụ 15 phút)
-        const QR_EXPIRY_MS = QR_EXPIRY_MINUTES * 60 * 1000;
+        const { classId, scheduleId, timestamp } = decodedData;
+
+        // Kiểm tra thời hạn QR code (15 phút)
+        const QR_EXPIRY_MS = 15 * 60 * 1000;
         if ((Date.now() - timestamp) > QR_EXPIRY_MS) {
             await transaction.rollback();
-            return res.status(400).json({ error: `QR code expired (valid for ${QR_EXPIRY_MINUTES} minutes)` });
+            return res.status(400).json({ error: 'Mã QR đã hết hạn' });
         }
 
-        // 5. Kiểm tra lớp học tồn tại
-        const classObj = await Class.findByPk(classId, { transaction });
-        if (!classObj) {
+        // Kiểm tra sinh viên
+        const student = await db.Student.findOne({
+            where: { userId: studentUserId },
+            transaction
+        });
+
+        if (!student) {
             await transaction.rollback();
-            return res.status(404).json({ error: 'Class specified in QR code not found' });
+            return res.status(404).json({ error: 'Không tìm thấy thông tin sinh viên' });
         }
 
-        // 6. KIỂM TRA SINH VIÊN CÓ THUỘC LỚP NÀY KHÔNG (Quan trọng cho yêu cầu của bạn)
-        const isStudentInClass = await classObj.hasStudent(studentObj, { transaction });
+        // Kiểm tra lớp học
+        const classInfo = await db.Class.findOne({
+            where: { id: classId },
+            transaction
+        });
+
+        if (!classInfo) {
+            await transaction.rollback();
+            return res.status(404).json({ error: 'Không tìm thấy lớp học' });
+        }
+
+        // Kiểm tra sinh viên có thuộc lớp không thông qua bảng ClassStudent
+        const isStudentInClass = await db.ClassStudent.findOne({
+            where: {
+                classId: classId,
+                studentId: student.id
+            },
+            transaction
+        });
+
         if (!isStudentInClass) {
             await transaction.rollback();
-            // Thông báo rõ lỗi: Sinh viên không thuộc lớp này
-            return res.status(403).json({ error: 'You are not enrolled in this class. Cannot check-in.' });
+            return res.status(403).json({ error: 'Bạn không thuộc lớp này' });
         }
 
-        // 7. KIỂM TRA CÓ ĐANG TRONG BUỔI HỌC CỦA LỚP NÀY KHÔNG
-        const now = new Date();
-        // Chuyển đổi sang timezone Hồ Chí Minh
-        const vietnamTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
-        const currentDayOfWeek = vietnamTime.getDay(); // 0=Sun, 1=Mon, ...
+        // Kiểm tra buổi học
+        const schedule = await db.ClassSchedule.findOne({
+            where: {
+                id: scheduleId,
+                classId: classId
+            },
+            transaction
+        });
 
-        // Lấy giờ dạng HH:MM:SS theo múi giờ Việt Nam
-        const currentTime = vietnamTime.toLocaleTimeString('en-US', { 
+        if (!schedule) {
+            await transaction.rollback();
+            return res.status(404).json({ error: 'Không tìm thấy buổi học' });
+        }
+
+        // Kiểm tra thời gian điểm danh
+        const now = new Date();
+        const currentTime = now.toLocaleTimeString('en-US', { 
             hour12: false,
             timeZone: 'Asia/Ho_Chi_Minh',
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit'
-        }); 
-
-        // Tìm lịch học phù hợp với thời gian hiện tại
-        const currentSchedule = await ClassSchedule.findOne({
-            where: {
-                classId: classId, // Chỉ tìm trong lịch của lớp này
-                dayOfWeek: currentDayOfWeek, // Đúng ngày trong tuần
-                startTime: {
-                    [Op.lte]: currentTime // Giờ bắt đầu <= giờ hiện tại
-                },
-                endTime: {
-                    [Op.gt]: currentTime  // Giờ kết thúc > giờ hiện tại
-                }
-                // isActive: true // Nếu có trạng thái active
-            },
-            transaction
         });
 
-        // Nếu không tìm thấy lịch học nào đang diễn ra
-        if (!currentSchedule) {
+        // Nếu không có thời gian điểm danh được cài đặt, sử dụng thời gian mặc định
+        const startTime = schedule.attendanceStartTime || schedule.startTime;
+        const endTime = schedule.attendanceEndTime || schedule.endTime;
+
+        if (currentTime < startTime) {
             await transaction.rollback();
-            // Thông báo rõ lỗi: Không phải giờ học
-            return res.status(400).json({ error: 'Check-in is not available. Not currently within a scheduled session for this class.' });
+            return res.status(400).json({ 
+                error: 'Chưa đến thời gian điểm danh',
+                startTime: startTime,
+                currentTime: currentTime
+            });
         }
 
-        // 8. Kiểm tra điểm danh trong ngày
-        const todayStart = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
-        todayStart.setHours(0, 0, 0, 0);
-        const todayEnd = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
-        todayEnd.setHours(23, 59, 59, 999);
+        if (currentTime > endTime) {
+            await transaction.rollback();
+            return res.status(400).json({ 
+                error: 'Đã hết thời gian điểm danh',
+                endTime: endTime,
+                currentTime: currentTime
+            });
+        }
 
-        const existingAttendance = await Attendance.findOne({
+        // Kiểm tra đã điểm danh chưa
+        const existingAttendance = await db.Attendance.findOne({
             where: {
-                // classId: classId, // Không cần nữa nếu đã có scheduleId
-                studentId: studentDbId,
-                scheduleId: currentSchedule.id, // KIỂM TRA THEO BUỔI HỌC CỤ THỂ
-                date: { // Vẫn kiểm tra trong ngày hôm nay để chắc chắn
-                    [Op.between]: [todayStart, todayEnd],
-                },
+                studentId: student.id,
+                scheduleId: scheduleId
             },
             transaction
         });
 
         if (existingAttendance) {
             await transaction.rollback();
-            // Thông báo rõ lỗi: Đã điểm danh buổi này rồi
-            return res.status(400).json({ error: 'Already checked in for this specific class session today.' });
+            return res.status(400).json({ error: 'Bạn đã điểm danh buổi học này' });
         }
 
-        // 9. Tạo bản ghi điểm danh mới, liên kết với buổi học
-        const newAttendance = await Attendance.create({
-            classId: classId, // Vẫn lưu classId để tiện truy vấn
-            studentId: studentDbId,
-            scheduleId: currentSchedule.id, // Lưu ID của buổi học đã điểm danh
+        // Tạo bản ghi điểm danh
+        const attendance = await db.Attendance.create({
+            studentId: student.id,
+            classId: classId,
+            scheduleId: scheduleId,
+            status: 'present',
+            checkInTime: now
         }, { transaction });
 
         await transaction.commit();
-        res.status(200).json({ message: `Check-in successful for schedule ${currentSchedule.id}!`, attendance: newAttendance });
+
+        res.status(200).json({
+            message: 'Điểm danh thành công',
+            attendance: {
+                id: attendance.id,
+                studentId: student.studentId,
+                classId: classId,
+                scheduleId: scheduleId,
+                status: attendance.status,
+                checkInTime: attendance.checkInTime
+            }
+        });
 
     } catch (error) {
         await transaction.rollback();
-        console.error("Check-in error:", error);
-        res.status(500).json({ error: 'Internal Server Error during check-in process' });
+        console.error('Lỗi khi điểm danh:', error);
+        res.status(500).json({ error: 'Lỗi server khi điểm danh' });
     }
 };
 
@@ -346,3 +362,73 @@ exports.getStudentHistory = async (req, res) => {
       res.status(500).json({ error: "Internal Server Error" });
     }
   };
+
+// Giáo viên tùy chỉnh thời gian điểm danh
+exports.updateAttendanceTime = async (req, res) => {
+    try {
+        const { scheduleId, startTime, endTime } = req.body;
+
+        if (!scheduleId || !startTime || !endTime) {
+            return res.status(400).json({ error: 'scheduleId, startTime và endTime là bắt buộc' });
+        }
+
+        // Kiểm tra quyền truy cập
+        if (req.user.role !== 'admin' && req.user.role !== 'teacher') {
+            return res.status(403).json({ error: 'Bạn không có quyền tùy chỉnh thời gian điểm danh' });
+        }
+
+        // Tìm buổi học
+        const schedule = await db.ClassSchedule.findOne({
+            where: { id: scheduleId },
+            include: [{
+                model: db.Class,
+                as: 'classInfo'
+            }]
+        });
+
+        if (!schedule) {
+            return res.status(404).json({ error: 'Không tìm thấy buổi học' });
+        }
+
+        // Kiểm tra nếu là giáo viên thì phải là giáo viên của lớp đó
+        if (req.user.role === 'teacher' && req.user.id !== schedule.classInfo.teacherId) {
+            return res.status(403).json({ error: 'Bạn không phải là giáo viên của lớp này' });
+        }
+
+        // Kiểm tra định dạng thời gian
+        const timeRegex = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
+        if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+            return res.status(400).json({ error: 'Định dạng thời gian không hợp lệ (HH:MM:SS)' });
+        }
+
+        // Kiểm tra thời gian kết thúc phải sau thời gian bắt đầu
+        const startTimeObj = new Date(`2000-01-01T${startTime}`);
+        const endTimeObj = new Date(`2000-01-01T${endTime}`);
+        if (endTimeObj <= startTimeObj) {
+            return res.status(400).json({ error: 'Thời gian kết thúc phải sau thời gian bắt đầu' });
+        }
+
+        // Cập nhật thời gian điểm danh
+        await schedule.update({
+            attendanceStartTime: startTime,
+            attendanceEndTime: endTime
+        });
+
+        res.status(200).json({
+            message: 'Cập nhật thời gian điểm danh thành công',
+            schedule: {
+                id: schedule.id,
+                classId: schedule.classId,
+                dayOfWeek: schedule.dayOfWeek,
+                startTime: schedule.startTime,
+                endTime: schedule.endTime,
+                attendanceStartTime: schedule.attendanceStartTime,
+                attendanceEndTime: schedule.attendanceEndTime
+            }
+        });
+
+    } catch (error) {
+        console.error('Lỗi khi cập nhật thời gian điểm danh:', error);
+        res.status(500).json({ error: 'Lỗi server khi cập nhật thời gian điểm danh' });
+    }
+};

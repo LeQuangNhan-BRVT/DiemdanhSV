@@ -1,6 +1,7 @@
 // controllers/studentController.js
 const db = require('../models');
 const Student = db.Student;
+const bcrypt = require('bcrypt');
 
 // Hàm này không nên được sử dụng trực tiếp, việc tạo Student được xử lý bởi Admin
 exports.createStudent = async (req, res) => {
@@ -22,22 +23,115 @@ exports.getAllStudents = async (req, res) => {
     }
 };
 
-// Lấy thông tin chi tiết một sinh viên (Admin hoặc Teacher)
-exports.getStudentById = async (req, res) => {
+// Lấy thông tin chi tiết một sinh viên
+exports.getStudentByUsername = async (req, res) => {
     try {
-        const { id } = req.params;
-        const student = await Student.findByPk(id, {
-            include: [db.User] // (Tùy chọn) Có thể include User để xem thông tin liên quan
+        const { username } = req.params;
+        
+        // Kiểm tra quyền truy cập
+        if (req.user.role !== 'admin' && req.user.role !== 'teacher' && req.user.username !== username) {
+            return res.status(403).json({ error: 'Bạn không có quyền xem thông tin này' });
+        }
+
+        // Tìm thông tin user
+        const user = await db.User.findOne({
+            where: { 
+                username,
+                role: 'student'
+            },
+            attributes: ['id', 'username', 'email', 'studentId']
         });
 
-        if (!student) {
-            return res.status(404).json({ error: 'Student not found' });
+        if (!user) {
+            return res.status(404).json({ error: 'Không tìm thấy sinh viên' });
         }
-        res.json(student);
-    } catch (err) {
-        console.error("Get student by ID error:", err);
-        res.status(500).json({ error: 'Internal Server Error' });
+
+        res.json({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            studentId: user.studentId
+        });
+    } catch (error) {
+        console.error('Lỗi khi lấy thông tin sinh viên:', error);
+        res.status(500).json({ error: 'Lỗi server khi lấy thông tin sinh viên' });
     }
 };
 
-// Có thể thêm các hàm updateStudent, deleteStudent (chỉ cho Admin)
+// Cập nhật thông tin sinh viên
+exports.updateStudentProfile = async (req, res) => {
+    try {
+        const { username } = req.params;
+        const { currentPassword, newPassword, email } = req.body;
+
+        // Kiểm tra quyền truy cập
+        if (req.user.role !== 'admin' && req.user.role !== 'teacher' && req.user.username !== username) {
+            return res.status(403).json({ error: 'Bạn không có quyền cập nhật thông tin này' });
+        }
+
+        // Tìm user
+        const user = await db.User.findOne({
+            where: { 
+                username,
+                role: 'student'
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: 'Không tìm thấy sinh viên' });
+        }
+
+        // Nếu có yêu cầu đổi mật khẩu
+        if (newPassword) {
+            if (!currentPassword) {
+                return res.status(400).json({ error: 'Vui lòng nhập mật khẩu hiện tại' });
+            }
+
+            // Kiểm tra mật khẩu hiện tại
+            const isMatch = await bcrypt.compare(currentPassword, user.password);
+            if (!isMatch) {
+                return res.status(401).json({ error: 'Mật khẩu hiện tại không đúng' });
+            }
+
+            // Mã hóa mật khẩu mới
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            await user.update({ password: hashedPassword });
+        }
+
+        // Nếu có yêu cầu đổi email
+        if (email) {
+            // Kiểm tra email đã tồn tại chưa
+            const existingUser = await db.User.findOne({ 
+                where: { 
+                    email,
+                    username: { [db.Sequelize.Op.ne]: username } // Không tính chính user hiện tại
+                } 
+            });
+            if (existingUser) {
+                return res.status(400).json({ error: 'Email đã được sử dụng' });
+            }
+
+            await user.update({ email });
+        }
+
+        // Lấy thông tin cập nhật
+        const updatedUser = await db.User.findOne({
+            where: { username },
+            attributes: ['id', 'username', 'email', 'studentId']
+        });
+
+        res.status(200).json({
+            message: 'Cập nhật thông tin thành công',
+            student: {
+                id: updatedUser.id,
+                username: updatedUser.username,
+                email: updatedUser.email,
+                studentId: updatedUser.studentId
+            }
+        });
+
+    } catch (error) {
+        console.error('Lỗi khi cập nhật thông tin sinh viên:', error);
+        res.status(500).json({ error: 'Lỗi server khi cập nhật thông tin' });
+    }
+};

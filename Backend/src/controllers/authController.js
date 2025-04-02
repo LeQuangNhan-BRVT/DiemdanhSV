@@ -40,6 +40,7 @@ exports.login = async (req, res) => {
     if(user.role === 'student'){
         responseUser.studentId = user.studentId;
     }
+    
     res.status(200).json({message: 'Dang nhap thanh cong', user: responseUser, token});
 
   } catch (error) {

@@ -50,6 +50,7 @@ db.Class = require('./Class')(sequelize, DataTypes);
 db.Student = require('./Student')(sequelize, DataTypes);
 db.Attendance = require('./Attendance')(sequelize, DataTypes);
 db.ClassSchedule = require('./ClassSchedule')(sequelize, DataTypes);
+db.ClassStudent = require('./ClassStudent')(sequelize, DataTypes);
 
 // 4. Đọc và Import tất cả các file Model trong thư mục hiện tại
 fs

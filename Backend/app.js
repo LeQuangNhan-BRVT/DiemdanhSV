@@ -29,7 +29,7 @@ app.use((err, req, res, next) => {
   console.error("-------------------- ERROR --------------------");
   console.error("Timestamp:", new Date().toISOString());
   console.error("Route:", req.method, req.originalUrl);
-  // Log thêm thông tin nếu cần (req.body, req.user, ...)
+  console.error("Request Body:", req.body);
   console.error("Error Stack:", err.stack);
   console.error("---------------------------------------------");
 
@@ -42,13 +42,18 @@ app.use((err, req, res, next) => {
 
   res.status(statusCode).json({ error: message });
 });
+
 // Sync database and start server
 db.sequelize
-  .sync() // { force: true } chỉ dùng khi dev để xóa và tạo lại bảng
+  .sync()
   .then(() => {
     console.log("Database synced successfully.");
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
+      console.log('Available routes:');
+      console.log('- POST /api/auth/admin/login');
+      console.log('- POST /api/auth/teacher/login');
+      console.log('- POST /api/auth/student/login');
     });
   })
   .catch((err) => {

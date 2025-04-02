@@ -4,6 +4,7 @@ const User = db.User;
 const Student = db.Student;
 const bcrypt = require("bcrypt");
 const ClassSchedule = require("../models/ClassSchedule");
+const jwt = require("jsonwebtoken");
 
 //admin tao cac users khac bao gom: student, teacher, other admin
 exports.createUser = async (req, res) => {
@@ -84,6 +85,57 @@ exports.createUser = async (req, res) => {
     }
     console.error("Create user error:", error);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+exports.adminLogin = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Hay nhap tai khoan va mat khau' });
+    }
+
+    const admin = await User.findOne({
+      where: {
+        username,
+        role: 'admin'
+      }
+    });
+
+    if (!admin) {
+      return res.status(401).json({ error: 'Tai khoan admin khong ton tai' });
+    }
+
+    const isMatch = await bcrypt.compare(password, admin.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Mat khau sai' });
+    }
+
+    // JWT
+    const payload = {
+      id: admin.id,
+      role: admin.role
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    // Tra thong tin admin
+    const responseUser = {
+      id: admin.id,
+      username: admin.username,
+      role: admin.role,
+      email: admin.email
+    };
+
+    res.status(200).json({
+      message: 'Dang nhap thanh cong',
+      user: responseUser,
+      token
+    });
+
+  } catch (error) {
+    console.log("Dang nhap admin that bai:", error);
+    res.status(500).json({ error: 'Server loi!' });
   }
 };
 

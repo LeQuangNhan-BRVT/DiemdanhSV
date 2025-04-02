@@ -153,57 +153,76 @@ exports.removeStudentFromClass = async (req, res) => {
   }
 };
 
-//Tạo lịch học cho một lớp
+// Tạo buổi học mới
 exports.createSchedule = async (req, res) => {
-  const transaction = await db.sequelize.transaction();
-  try {
-    const { classId } = req.params; //lay classId tu URL
-    const { dayOfWeek, startTime, endTime } = req.body;
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    //Kiem tra thu
-    if (dayOfWeek === undefined || !startTime || !endTime) {
-      await transaction.rollback();
-      return res
-        .status(400)
-        .json({
-          error:
-            "ngay trong tuan, thoi gian bat dau, thoi gian ket thuc phai nhap vao",
+    const transaction = await db.sequelize.transaction();
+    try {
+        const { classId } = req.params;
+        const { dayOfWeek, startTime, endTime } = req.body;
+
+        // Kiểm tra dữ liệu đầu vào
+        if (dayOfWeek === undefined || !startTime || !endTime) {
+            await transaction.rollback();
+            return res.status(400).json({
+                error: "Ngày trong tuần, thời gian bắt đầu, thời gian kết thúc phải được nhập"
+            });
+        }
+
+        // Kiểm tra classId có tồn tại không
+        const classInfo = await db.Class.findOne({
+            where: { id: classId },
+            transaction
         });
+
+        if (!classInfo) {
+            await transaction.rollback();
+            return res.status(404).json({ error: 'Không tìm thấy lớp học' });
+        }
+
+        // Kiểm tra quyền truy cập
+        if (req.user.role !== 'admin' && req.user.role !== 'teacher') {
+            await transaction.rollback();
+            return res.status(403).json({ error: 'Bạn không có quyền tạo buổi học' });
+        }
+
+        // Kiểm tra nếu là giáo viên thì phải là giáo viên của lớp đó
+        if (req.user.role === 'teacher' && req.user.id !== classInfo.teacherId) {
+            await transaction.rollback();
+            return res.status(403).json({ error: 'Bạn không phải là giáo viên của lớp này' });
+        }
+
+        // Tạo buổi học mới
+        const schedule = await db.ClassSchedule.create({
+            classId,
+            dayOfWeek,
+            startTime,
+            endTime
+        }, { transaction });
+
+        await transaction.commit();
+
+        res.status(201).json({
+            message: 'Tạo buổi học thành công',
+            schedule: {
+                id: schedule.id,
+                classId: schedule.classId,
+                dayOfWeek: schedule.dayOfWeek,
+                startTime: schedule.startTime,
+                endTime: schedule.endTime
+            }
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        if (error.name === "SequelizeValidationError") {
+            const messages = error.errors.map(e => e.message);
+            return res.status(400).json({ error: messages.join(", ") });
+        }
+        console.error('Lỗi khi tạo buổi học:', error);
+        res.status(500).json({ error: 'Lỗi server khi tạo buổi học' });
     }
-    //Kiem tra lop hoc
-    const classObj = await Class.findByPk(classId, { transaction });
-    if (!classObj) {
-      await transaction.rollback();
-      res.status(400).json({ error: "Khong tim thay lop hoc" });
-    }
-    //Kiem tra phai la teacher || admin khong
-    if (userRole !== "admin" && classObj.teacherId !== userId) {
-      await transaction.rollback();
-      res.status(400).json({ error: "Ban khong co quyen tao buoi hoc" });
-    }
-    //Tao buoi hoc
-    const newSchedule = await ClassSchedule.create(
-      {
-        classId: classObj.id,
-        dayOfWeek,
-        startTime,
-        endTime,
-      },
-      { transaction }
-    );
-    await transaction.commit();
-    res.status(201).json(newSchedule);
-  } catch (error) {
-    await transaction.rollback();
-    if (error.name === "SequelizeValidationError") {
-      const message = error.errors.map((e) => e.message);
-      return res.status(400), json({ error: message.join(", ") });
-    }
-    console.error("tao lich hoc that bai", error);
-    res.status(500).json({ error: "Loi server trong khi tao lich hoc" });
-  }
 };
+
 // Lấy tất cả lịch học của một lớp (Teacher/Admin)
 exports.getClassSchedules = async (req, res) => {
   try {
