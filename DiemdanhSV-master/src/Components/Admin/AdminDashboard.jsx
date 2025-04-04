@@ -1,246 +1,170 @@
-// src/pages/AdminDashboard.jsx
 import { useState, useEffect } from "react";
-import {
-  Container,
-  Tabs,
-  Tab,
-  Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Stack,
-  TextField,
-  MenuItem,
-} from "@mui/material";
-import { Edit, Delete, Add, Schedule, Person } from "@mui/icons-material";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { LocalizationProvider, DateTimePicker } from "@mui/x-date-pickers";
+import { Button, Box, CircularProgress, Alert } from "@mui/material";
+import AdminLayout from "./AdminLayout";
+import TeacherTable from "./TeacherManagement/TeacherTable";
+import TeacherForm from "./TeacherManagement/TeacherForm";
+import SessionForm from "./ClassSession/SessionForm";
+import StudentTable from "./StudentManagement/StudentTable";
+import StudentForm from "./StudentManagement/StudentForm";
+import userService from "../../services/userService";
+import classService from "../../services/classService";
+import { useAuth } from "../../hooks/useAuth";
 
 const AdminDashboard = () => {
+  useAuth(["admin"]);
+
   const [tabValue, setTabValue] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // State management
   const [teachers, setTeachers] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [students, setStudents] = useState([]);
+
+  // Form states
   const [openTeacherForm, setOpenTeacherForm] = useState(false);
   const [openSessionForm, setOpenSessionForm] = useState(false);
+  const [openStudentForm, setOpenStudentForm] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [sessionData, setSessionData] = useState({
-    start: new Date(),
-    end: new Date(),
-  });
+  const [selectedStudent, setSelectedStudent] = useState(null);
 
   // Fetch data
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       try {
-        const [teachersRes, classesRes] = await Promise.all([
-          fetch("/api/admin/users?role=teacher"),
-          fetch("/api/classes"),
+        const [teachersData, classesData, studentsData] = await Promise.all([
+          userService.getTeachers(),
+          classService.getAllClasses(),
+          userService.getStudents(),
         ]);
 
-        setTeachers(await teachersRes.json());
-        setClasses(await classesRes.json());
-      } catch (error) {
-        console.error("Lỗi tải dữ liệu:", error);
+        setTeachers(teachersData);
+        setClasses(classesData);
+        setStudents(studentsData);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
       }
     };
-    fetchData();
+
+    fetchInitialData();
   }, []);
 
-  // Xử lý giáo viên
   const handleTeacherSubmit = async (formData) => {
     try {
-      const url = selectedTeacher
-        ? `/api/admin/users/${selectedTeacher.id}`
-        : "/api/admin/users";
-
-      const response = await fetch(url, {
-        method: selectedTeacher ? "PUT" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
+      let updatedTeachers;
+      if (selectedTeacher) {
+        const updatedTeacher = await userService.updateUser(
+          selectedTeacher.id,
+          formData
+        );
+        updatedTeachers = teachers.map((t) =>
+          t.id === selectedTeacher.id ? updatedTeacher : t
+        );
+      } else {
+        const newTeacher = await userService.createUser({
           ...formData,
           role: "teacher",
-        }),
-      });
+        });
+        updatedTeachers = [...teachers, newTeacher];
+      }
 
-      if (!response.ok) throw new Error("Request failed");
-
+      setTeachers(updatedTeachers);
       setOpenTeacherForm(false);
-      window.location.reload();
-    } catch (error) {
-      console.error("Lỗi:", error);
+      setSelectedTeacher(null);
+    } catch (err) {
+      setError(err.message);
     }
   };
 
-  // Xử lý buổi học
-  const handleSessionSubmit = async () => {
+  const handleSessionSubmit = async (formData) => {
     try {
-      const response = await fetch("/api/classes/schedules", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          ...sessionData,
-          classId: sessionData.selectedClass,
-          teacherId: sessionData.selectedTeacher,
-        }),
-      });
+      const newSession = await classService.createSchedule(
+        formData.classId,
+        formData
+      );
 
-      if (!response.ok) throw new Error("Request failed");
-
+      const updatedClasses = await classService.getAllClasses();
+      setClasses(updatedClasses);
       setOpenSessionForm(false);
-      window.location.reload();
-    } catch (error) {
-      console.error("Lỗi:", error);
+    } catch (err) {
+      setError(err.message);
     }
   };
+
+  const handleStudentSubmit = async (formData) => {
+    try {
+      let updatedStudents;
+      if (selectedStudent) {
+        const updatedStudent = await userService.updateUser(
+          selectedStudent.id,
+          { ...formData, studentId: formData.studentId }
+        );
+        updatedStudents = students.map((s) =>
+          s.id === selectedStudent.id ? updatedStudent : s
+        );
+      } else {
+        const newStudent = await userService.createUser({
+          ...formData,
+          role: "student",
+          studentId: formData.studentId,
+        });
+        updatedStudents = [...students, newStudent];
+      }
+
+      setStudents(updatedStudents);
+      setOpenStudentForm(false);
+      setSelectedStudent(null);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    try {
+      await userService.deleteUser(userId);
+      setTeachers(teachers.filter((t) => t.id !== userId));
+      setStudents(students.filter((s) => s.id !== userId));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  if (loading) return <CircularProgress />;
+  if (error) return <Alert severity="error">{error}</Alert>;
 
   return (
-    <Container maxWidth="xl">
-      {/* Phần layout chung */}
-      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 4 }}>
-        <Tabs
-          value={tabValue}
-          onChange={(e, newVal) => setTabValue(newVal)}
-          variant="fullWidth"
-        >
-          <Tab label="Quản lý Giảng viên" icon={<Person />} />
-          <Tab label="Tạo Buổi học" icon={<Schedule />} />
-        </Tabs>
-      </Box>
-
-      {/* Nội dung theo tab */}
+    <AdminLayout value={tabValue} onChange={(e, newVal) => setTabValue(newVal)}>
       {tabValue === 0 && (
         <Box>
           <Button
             variant="contained"
-            startIcon={<Add />}
             sx={{ mb: 3 }}
             onClick={() => setOpenTeacherForm(true)}
           >
             Thêm Giảng viên
           </Button>
 
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Tên đăng nhập</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Trạng thái</TableCell>
-                  <TableCell>Thao tác</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {teachers.map((teacher) => (
-                  <TableRow key={teacher.id}>
-                    <TableCell>{teacher.username}</TableCell>
-                    <TableCell>{teacher.email}</TableCell>
-                    <TableCell>
-                      <Box
-                        component="span"
-                        sx={{
-                          color: teacher.isActive
-                            ? "success.main"
-                            : "error.main",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        {teacher.isActive ? "Hoạt động" : "Vô hiệu"}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <IconButton
-                        color="primary"
-                        onClick={() => {
-                          setSelectedTeacher(teacher);
-                          setOpenTeacherForm(true);
-                        }}
-                      >
-                        <Edit />
-                      </IconButton>
-                      <IconButton
-                        color="error"
-                        onClick={() => {
-                          if (window.confirm("Xác nhận xóa giảng viên?")) {
-                            // Xử lý xóa
-                          }
-                        }}
-                      >
-                        <Delete />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <TeacherTable
+            teachers={teachers}
+            onEdit={(teacher) => {
+              setSelectedTeacher(teacher);
+              setOpenTeacherForm(true);
+            }}
+            onDelete={handleDeleteUser}
+          />
 
-          {/* Form giáo viên */}
-          <Dialog
+          <TeacherForm
             open={openTeacherForm}
-            onClose={() => setOpenTeacherForm(false)}
-            fullWidth
-            maxWidth="sm"
-          >
-            <DialogTitle>
-              {selectedTeacher ? "Chỉnh sửa Giảng viên" : "Thêm Giảng viên mới"}
-            </DialogTitle>
-            <DialogContent>
-              <Stack spacing={3} sx={{ mt: 2 }}>
-                <TextField
-                  label="Tên đăng nhập"
-                  defaultValue={selectedTeacher?.username || ""}
-                  fullWidth
-                  required
-                />
-
-                <TextField
-                  label="Email"
-                  type="email"
-                  defaultValue={selectedTeacher?.email || ""}
-                  fullWidth
-                  required
-                />
-
-                {!selectedTeacher && (
-                  <TextField
-                    label="Mật khẩu"
-                    type="password"
-                    fullWidth
-                    required
-                  />
-                )}
-              </Stack>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setOpenTeacherForm(false)}>Hủy</Button>
-              <Button
-                variant="contained"
-                onClick={() =>
-                  handleTeacherSubmit({
-                    // Lấy dữ liệu từ form
-                  })
-                }
-              >
-                {selectedTeacher ? "Cập nhật" : "Thêm mới"}
-              </Button>
-            </DialogActions>
-          </Dialog>
+            teacher={selectedTeacher}
+            onClose={() => {
+              setOpenTeacherForm(false);
+              setSelectedTeacher(null);
+            }}
+            onSubmit={handleTeacherSubmit}
+          />
         </Box>
       )}
 
@@ -248,102 +172,52 @@ const AdminDashboard = () => {
         <Box>
           <Button
             variant="contained"
-            startIcon={<Add />}
             sx={{ mb: 3 }}
             onClick={() => setOpenSessionForm(true)}
           >
             Tạo Buổi học mới
           </Button>
 
-          {/* Form tạo buổi học */}
-          <Dialog
+          <SessionForm
             open={openSessionForm}
+            classes={classes}
             onClose={() => setOpenSessionForm(false)}
-            fullWidth
-            maxWidth="md"
-          >
-            <DialogTitle>Tạo Buổi học mới</DialogTitle>
-            <DialogContent>
-              <Stack spacing={3} sx={{ mt: 2 }}>
-                <TextField
-                  select
-                  label="Lớp học"
-                  fullWidth
-                  value={sessionData.selectedClass || ""}
-                  onChange={(e) =>
-                    setSessionData((prev) => ({
-                      ...prev,
-                      selectedClass: e.target.value,
-                    }))
-                  }
-                >
-                  {classes.map((cls) => (
-                    <MenuItem key={cls.id} value={cls.id}>
-                      {cls.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-
-                <TextField
-                  select
-                  label="Giảng viên"
-                  fullWidth
-                  value={sessionData.selectedTeacher || ""}
-                  onChange={(e) =>
-                    setSessionData((prev) => ({
-                      ...prev,
-                      selectedTeacher: e.target.value,
-                    }))
-                  }
-                >
-                  {teachers.map((teacher) => (
-                    <MenuItem key={teacher.id} value={teacher.id}>
-                      {teacher.username}
-                    </MenuItem>
-                  ))}
-                </TextField>
-
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                  <DateTimePicker
-                    label="Thời gian bắt đầu"
-                    value={sessionData.start}
-                    onChange={(newValue) =>
-                      setSessionData((prev) => ({
-                        ...prev,
-                        start: newValue,
-                      }))
-                    }
-                    renderInput={(params) => (
-                      <TextField {...params} fullWidth />
-                    )}
-                  />
-
-                  <DateTimePicker
-                    label="Thời gian kết thúc"
-                    value={sessionData.end}
-                    onChange={(newValue) =>
-                      setSessionData((prev) => ({
-                        ...prev,
-                        end: newValue,
-                      }))
-                    }
-                    renderInput={(params) => (
-                      <TextField {...params} fullWidth />
-                    )}
-                  />
-                </LocalizationProvider>
-              </Stack>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setOpenSessionForm(false)}>Hủy</Button>
-              <Button variant="contained" onClick={handleSessionSubmit}>
-                Tạo buổi học
-              </Button>
-            </DialogActions>
-          </Dialog>
+            onSubmit={handleSessionSubmit}
+          />
         </Box>
       )}
-    </Container>
+
+      {tabValue === 2 && (
+        <Box>
+          <Button
+            variant="contained"
+            sx={{ mb: 3 }}
+            onClick={() => setOpenStudentForm(true)}
+          >
+            Thêm Sinh viên
+          </Button>
+
+          <StudentTable
+            students={students}
+            onEdit={(student) => {
+              setSelectedStudent(student);
+              setOpenStudentForm(true);
+            }}
+            onDelete={handleDeleteUser}
+          />
+
+          <StudentForm
+            open={openStudentForm}
+            student={selectedStudent}
+            onClose={() => {
+              setOpenStudentForm(false);
+              setSelectedStudent(null);
+            }}
+            onSubmit={handleStudentSubmit}
+          />
+        </Box>
+      )}
+    </AdminLayout>
   );
 };
 
