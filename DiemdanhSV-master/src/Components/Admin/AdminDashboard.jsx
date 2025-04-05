@@ -48,17 +48,9 @@ const AdminDashboard = () => {
         setError(err.message);
         setLoading(false);
       }
+
     };
-    const fetchUser = async () => {
-      const cachedUser = localStorage.getItem("currentUser");
-      if (cachedUser) {
-        setUser(JSON.parse(cachedUser));
-      } else {
-        const userData = await userService.getUserProfile();
-        localStorage.setItem("currentUser", JSON.stringify(userData));
-      }
-    };
-    fetchUser();
+    
 
     fetchInitialData();
   }, []);
@@ -71,7 +63,7 @@ const AdminDashboard = () => {
         email: formData.email,
         // Thêm các trường khác nếu cần, nhưng KHÔNG đưa React elements/events vào
       };
-
+  
       let updatedTeachers;
       if (selectedTeacher) {
         // Gửi dữ liệu đã làm sạch
@@ -90,7 +82,7 @@ const AdminDashboard = () => {
         });
         updatedTeachers = [...teachers, newTeacher];
       }
-
+  
       setTeachers(updatedTeachers);
       setOpenTeacherForm(false);
       setSelectedTeacher(null);
@@ -99,16 +91,16 @@ const AdminDashboard = () => {
     }
   };
 
-  // Fetch sessions khi tạo mới
-  const handleSessionSubmit = async (formData) => {
-    try {
-      const newSession = await classService.createSession(formData);
-      setSessions([...sessions, newSession]);
-      setOpenSessionForm(false);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
+// Fetch sessions khi tạo mới
+const handleSessionSubmit = async (formData) => {
+  try {
+    const newSession = await classService.createSession(formData);
+    setSessions([...sessions, newSession]);
+    setOpenSessionForm(false);
+  } catch (err) {
+    setError(err.message);
+  }
+};
 
   const handleStudentSubmit = async (formData) => {
     try {
