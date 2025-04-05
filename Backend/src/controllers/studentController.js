@@ -1,7 +1,9 @@
 // controllers/studentController.js
 const db = require('../models');
 const Student = db.Student;
+const User = db.User;
 const bcrypt = require('bcrypt');
+const { Op } = require("sequelize"); // Thêm Op để tìm kiếm
 
 // Hàm này không nên được sử dụng trực tiếp, việc tạo Student được xử lý bởi Admin
 exports.createStudent = async (req, res) => {
@@ -133,5 +135,40 @@ exports.updateStudentProfile = async (req, res) => {
     } catch (error) {
         console.error('Lỗi khi cập nhật thông tin sinh viên:', error);
         res.status(500).json({ error: 'Lỗi server khi cập nhật thông tin' });
+    }
+};
+
+// Tìm kiếm sinh viên (cho chức năng thêm vào lớp)
+exports.searchStudents = async (req, res) => {
+    try {
+        const { q } = req.query; // Lấy query parameter 'q'
+
+        if (!q) {
+            return res.json([]); // Trả về mảng rỗng nếu không có query
+        }
+
+        const searchTerm = `%${q}%`; // Chuẩn bị cho LIKE query
+
+        // Tìm kiếm trong bảng Student dựa trên name hoặc studentId
+        const students = await Student.findAll({
+            where: {
+                [Op.or]: [
+                    { name: { [Op.like]: searchTerm } },
+                    { studentId: { [Op.like]: searchTerm } }
+                ]
+            },
+            attributes: ['id', 'name', 'studentId'], // Chỉ lấy các trường cần thiết
+            limit: 10 // Giới hạn số lượng kết quả trả về
+        });
+
+        res.json(students);
+
+    } catch (err) {
+        console.error("Search students error:", err);
+        res.status(500).json({ 
+            error: "Lỗi khi tìm kiếm sinh viên",
+            details: err.message, 
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
     }
 };

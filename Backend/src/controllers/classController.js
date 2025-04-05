@@ -4,7 +4,7 @@ const Class = db.Class;
 const Student = db.Student;
 const User = db.User; // Import User để kiểm tra teacherId
 const ClassSchedule = db.ClassSchedule;
-const { Op, json } = require("sequelize");
+const { Op } = require("sequelize");
 
 // Tạo lớp học mới (Admin hoặc Teacher)
 exports.createClass = async (req, res) => {
@@ -219,7 +219,12 @@ exports.createSchedule = async (req, res) => {
             return res.status(400).json({ error: messages.join(", ") });
         }
         console.error('Lỗi khi tạo buổi học:', error);
-        res.status(500).json({ error: 'Lỗi server khi tạo buổi học' });
+        // Cập nhật response lỗi để cung cấp thêm chi tiết
+        res.status(500).json({ 
+            error: 'Lỗi server khi tạo buổi học', 
+            details: error.message, 
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+        });
     }
 };
 
@@ -362,4 +367,75 @@ exports.deleteSchedule = async (req, res) => {
       .status(500)
       .json({ error: "Internal Server Error while deleting schedule" });
   }
+};
+
+// Lấy danh sách lớp học của giáo viên đang đăng nhập
+exports.getTeacherClasses = async (req, res) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ error: "Không tìm thấy thông tin người dùng" });
+        }
+
+        const teacherId = req.user.id;
+        console.log('Teacher ID:', teacherId);
+
+        if (!teacherId) {
+            return res.status(400).json({ error: "ID giáo viên không hợp lệ" });
+        }
+
+        const classes = await Class.findAll({
+            where: { teacherId },
+            include: [
+                {
+                    model: Student,
+                    as: 'Students',
+                    attributes: ['id', 'name', 'studentId'],
+                    through: { attributes: [] }, 
+                    required: false // LEFT JOIN để lấy cả lớp không có sinh viên
+                }
+            ],
+            order: [['createdAt', 'DESC']],
+        });
+
+        console.log(`Tìm thấy ${classes.length} lớp học của giáo viên ${teacherId}`);
+        res.json(classes);
+    } catch (err) {
+        console.error("Lỗi khi lấy danh sách lớp học của giáo viên:", err);
+        // Thêm chi tiết lỗi vào response để dễ debug hơn trên Postman/client
+        res.status(500).json({ 
+            error: "Lỗi server khi lấy danh sách lớp học", 
+            details: err.message, 
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined // Chỉ hiển thị stack trace khi ở development
+        });
+    }
+};
+
+// Lấy danh sách sinh viên của một lớp
+exports.getClassStudents = async (req, res) => {
+    try {
+        const { classId } = req.params;
+        const classObj = await Class.findByPk(classId, {
+            include: [{
+                model: Student,
+                as: 'Students', // Đảm bảo alias này khớp với định nghĩa trong Class.associate
+                attributes: ['id', 'name', 'studentId'], // Lấy các trường cần thiết của Student
+                through: { attributes: [] } // Không lấy thông tin từ bảng trung gian ClassStudent
+            }],
+            // Không cần include Teacher ở đây
+        });
+
+        if (!classObj) {
+            return res.status(404).json({ error: "Class not found" });
+        }
+
+        // classObj.Students sẽ là mảng các sinh viên thuộc lớp đó
+        res.json(classObj.Students || []); // Trả về mảng rỗng nếu không có sinh viên
+    } catch (err) {
+        console.error("Get class students error:", err);
+        res.status(500).json({ 
+            error: "Lỗi khi lấy danh sách sinh viên của lớp", 
+            details: err.message, 
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    }
 };

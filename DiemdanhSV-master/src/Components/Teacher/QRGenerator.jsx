@@ -1,24 +1,21 @@
-import React, { useState } from 'react';
-import attendanceService from '../../services/attendanceService';
-import './QRGenerator.css';
+import { useState } from 'react';
+import { Box, Button, Typography, Paper, CircularProgress } from '@mui/material';
+import QRCode from 'qrcode.react';
+import { generateQR } from '../../services/attendanceService';
 
-const QRGenerator = ({ classes }) => {
-  const [selectedClass, setSelectedClass] = useState('');
-  const [qrCode, setQrCode] = useState(null);
-  const [error, setError] = useState(null);
+const QRGenerator = ({ classId, scheduleId }) => {
+  const [qrData, setQrData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [expiresAt, setExpiresAt] = useState(null);
 
-  const generateQR = async () => {
-    if (!selectedClass) {
-      setError('Vui lòng chọn lớp học');
-      return;
-    }
-
+  const handleGenerateQR = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await attendanceService.generateQR({ classId: parseInt(selectedClass) });
-      setQrCode(response.qrCodeURL);
+      const response = await generateQR(classId, scheduleId);
+      setQrData(response.qrData);
+      setExpiresAt(response.expiresAt);
     } catch (err) {
       setError(err.message || 'Không thể tạo mã QR');
     } finally {
@@ -27,45 +24,40 @@ const QRGenerator = ({ classes }) => {
   };
 
   return (
-    <div className="qr-generator">
-      <h2>Tạo mã QR điểm danh</h2>
+    <Paper elevation={3} sx={{ p: 3, textAlign: 'center' }}>
+      <Typography variant="h6" gutterBottom>
+        Tạo mã QR điểm danh
+      </Typography>
       
-      <div className="qr-controls">
-        <select 
-          value={selectedClass}
-          onChange={(e) => setSelectedClass(e.target.value)}
-          className="class-select"
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
+          <CircularProgress />
+        </Box>
+      ) : qrData ? (
+        <Box sx={{ my: 3 }}>
+          <QRCode value={qrData} size={200} level="H" />
+          {expiresAt && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              Mã QR sẽ hết hạn vào: {new Date(expiresAt).toLocaleString()}
+            </Typography>
+          )}
+        </Box>
+      ) : (
+        <Button
+          variant="contained"
+          onClick={handleGenerateQR}
+          sx={{ my: 3 }}
         >
-          <option value="">Chọn lớp học</option>
-          {classes.map(cls => (
-            <option key={cls.id} value={cls.id}>
-              {cls.name}
-            </option>
-          ))}
-        </select>
-
-        <button 
-          onClick={generateQR}
-          disabled={loading || !selectedClass}
-          className="generate-btn"
-        >
-          {loading ? 'Đang tạo...' : 'Tạo mã QR'}
-        </button>
-      </div>
-
-      {error && <div className="error-message">{error}</div>}
-
-      {qrCode && (
-        <div className="qr-display">
-          <img src={qrCode} alt="QR Code" />
-          <p className="qr-note">
-            Mã QR có hiệu lực trong 15 phút.
-            <br />
-            Sinh viên quét mã này để điểm danh.
-          </p>
-        </div>
+          Tạo mã QR
+        </Button>
       )}
-    </div>
+
+      {error && (
+        <Typography color="error" sx={{ mt: 2 }}>
+          {error}
+        </Typography>
+      )}
+    </Paper>
   );
 };
 

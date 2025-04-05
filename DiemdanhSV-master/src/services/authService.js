@@ -1,79 +1,67 @@
-import api from './api';
+import api from "../config/api";
+
+export const login = async (username, password, role) => {
+  try {
+    const response = await api.post(`/auth/${role}/login`, {
+      username,
+      password,
+    });
+    const { data } = response;
+
+    if (!data.token || !data.user) {
+      throw new Error("Dữ liệu đăng nhập không hợp lệ");
+    }
+
+    // Lưu thông tin đăng nhập
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("refreshToken", data.refreshToken || "");
+    localStorage.setItem("userRole", data.user.role);
+    localStorage.setItem("user", JSON.stringify(data.user));
+
+    return {
+      success: true,
+      user: data.user,
+      token: data.token,
+    };
+  } catch (error) {
+    localStorage.clear();
+    if (error.response) {
+      throw new Error(error.response.data.message || "Đăng nhập thất bại");
+    }
+    throw new Error("Không thể kết nối đến server");
+  }
+};
+
+export const logout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("userRole");
+  localStorage.removeItem("user");
+  window.location.href = "/login";
+};
 
 const authService = {
-    loginStudent: async (credentials) => {
-        try {
-            const response = await api.post('/auth/student/login', credentials);
-            
-            if (response.data.user && response.data.user.role !== 'student') {
-                throw new Error('Tài khoản này không phải là sinh viên');
-            }
-            
-            if (response.data.token) {
-                localStorage.setItem('token', response.data.token);
-                localStorage.setItem('refreshToken', response.data.refreshToken);
-                localStorage.setItem('userRole', 'student');
-                localStorage.setItem('user', JSON.stringify(response.data.user));
-            }
-            
-            return response.data;
-        } catch (error) {
-            throw new Error(error.response?.data?.error || 'Đăng nhập thất bại');
-        }
-    },
+  getCurrentUser: () => {
+    const user = localStorage.getItem("user");
+    return user ? JSON.parse(user) : null;
+  },
 
-    loginTeacher: async (credentials) => {
-        try {
-            const response = await api.post('/auth/teacher/login', credentials);
-            
-            if (response.data.user && !['teacher', 'admin'].includes(response.data.user.role)) {
-                throw new Error('Tài khoản này không có quyền truy cập');
-            }
-            
-            if (response.data.token) {
-                localStorage.setItem('token', response.data.token);
-                localStorage.setItem('refreshToken', response.data.refreshToken);
-                localStorage.setItem('userRole', response.data.user.role); // 'teacher' hoặc 'admin'
-                localStorage.setItem('user', JSON.stringify(response.data.user));
-            }
-            
-            return response.data;
-        } catch (error) {
-            throw new Error(error.response?.data?.error || 'Đăng nhập thất bại');
-        }
-    },
+  isAuthenticated: () => {
+    return !!localStorage.getItem("token");
+  },
 
-    logout: () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('refreshToken');
-    },
+  getToken: () => {
+    return localStorage.getItem("token");
+  },
 
-    getCurrentUser: () => {
-        const user = localStorage.getItem('user');
-        return user ? JSON.parse(user) : null;
-    },
+  getUserRole: () => {
+    return localStorage.getItem("userRole");
+  },
 
-    isAuthenticated: () => {
-        return !!localStorage.getItem('token');
-    },
-
-    getToken: () => {
-        return localStorage.getItem('token');
-    },
-
-    refreshToken: async (refreshToken) => {
-        const response = await api.post('/auth/refresh-token', { token: refreshToken });
-        return response;
-    },
-
-    validateToken: async () => {
-       
-            const response = await api.get('/auth/validate');
-            return response.data;
-       
-    }
+  validateToken: async () => {
+    const response = await api.get("/auth/validate");
+    return response.data;
+  },
 };
 
 export default authService;
