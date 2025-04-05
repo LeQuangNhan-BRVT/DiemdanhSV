@@ -19,7 +19,6 @@ const SignInTeacher = () => {
 
     try {
       const response = await api.post('/auth/teacher/login', formData);
-      
       // Kiểm tra response và role
       if (!response.data || !response.data.user) {
         throw new Error('Phản hồi không hợp lệ từ server');

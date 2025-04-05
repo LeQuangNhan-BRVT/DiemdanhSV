@@ -1,6 +1,7 @@
 // src/components/Admin/StudentManagement/StudentTable.jsx
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton } from '@mui/material';
-import { Edit, Delete } from '@mui/icons-material';
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 const StudentTable = ({ students, onEdit, onDelete }) => {
   return (
@@ -31,10 +32,10 @@ const StudentTable = ({ students, onEdit, onDelete }) => {
               </TableCell>
               <TableCell>
                 <IconButton onClick={() => onEdit(student)}>
-                  <Edit color="primary" />
+                  <EditIcon color="primary" />
                 </IconButton>
                 <IconButton onClick={() => onDelete(student.id)}>
-                  <Delete color="error" />
+                  <DeleteIcon color="error" />
                 </IconButton>
               </TableCell>
             </TableRow>

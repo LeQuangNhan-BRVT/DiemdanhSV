@@ -1,7 +1,6 @@
 // src/components/Admin/ClassSession/SessionList.jsx
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
-
 const SessionList = ({ sessions }) => {
   return (
     <TableContainer component={Paper}>

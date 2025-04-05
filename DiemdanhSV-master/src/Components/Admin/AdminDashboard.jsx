@@ -21,7 +21,8 @@ const AdminDashboard = () => {
   const [teachers, setTeachers] = useState([]);
   const [classes, setClasses] = useState([]);
   const [students, setStudents] = useState([]);
-
+  // Thêm state quản lý sessions
+  const [sessions, setSessions] = useState([]);
   // Form states
   const [openTeacherForm, setOpenTeacherForm] = useState(false);
   const [openSessionForm, setOpenSessionForm] = useState(false);
@@ -48,24 +49,43 @@ const AdminDashboard = () => {
         setLoading(false);
       }
     };
+    const fetchUser = async () => {
+      const cachedUser = localStorage.getItem("currentUser");
+      if (cachedUser) {
+        setUser(JSON.parse(cachedUser));
+      } else {
+        const userData = await userService.getUserProfile();
+        localStorage.setItem("currentUser", JSON.stringify(userData));
+      }
+    };
+    fetchUser();
 
     fetchInitialData();
   }, []);
 
   const handleTeacherSubmit = async (formData) => {
     try {
+      // Tạo payload chỉ chứa dữ liệu cần thiết
+      const sanitizedData = {
+        username: formData.username,
+        email: formData.email,
+        // Thêm các trường khác nếu cần, nhưng KHÔNG đưa React elements/events vào
+      };
+
       let updatedTeachers;
       if (selectedTeacher) {
+        // Gửi dữ liệu đã làm sạch
         const updatedTeacher = await userService.updateUser(
           selectedTeacher.id,
-          formData
+          sanitizedData // <-- Sử dụng sanitizedData thay vì formData
         );
         updatedTeachers = teachers.map((t) =>
           t.id === selectedTeacher.id ? updatedTeacher : t
         );
       } else {
+        // Tạo mới với dữ liệu đã làm sạch
         const newTeacher = await userService.createUser({
-          ...formData,
+          ...sanitizedData,
           role: "teacher",
         });
         updatedTeachers = [...teachers, newTeacher];
@@ -79,15 +99,11 @@ const AdminDashboard = () => {
     }
   };
 
+  // Fetch sessions khi tạo mới
   const handleSessionSubmit = async (formData) => {
     try {
-      const newSession = await classService.createSchedule(
-        formData.classId,
-        formData
-      );
-
-      const updatedClasses = await classService.getAllClasses();
-      setClasses(updatedClasses);
+      const newSession = await classService.createSession(formData);
+      setSessions([...sessions, newSession]);
       setOpenSessionForm(false);
     } catch (err) {
       setError(err.message);

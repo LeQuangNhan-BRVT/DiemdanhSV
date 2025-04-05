@@ -1,13 +1,30 @@
-import api from './api';
+import api from "./api";
+const validateUserData = (userData, isCreate = false) => {
+  const errors = [];
 
+  if (isCreate && !userData.password) {
+    errors.push("Mật khẩu là bắt buộc");
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userData.email)) {
+    errors.push("Email không hợp lệ");
+  }
+
+  if (errors.length > 0) {
+    throw new Error(errors.join(", "));
+  }
+};
 const userService = {
   // Lấy thông tin hồ sơ người dùng
+
   getUserProfile: async () => {
     try {
       const response = await api.get(`/user/profile`);
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: "Không thể lấy thông tin hồ sơ" };
+      throw (
+        error.response?.data || { message: "Không thể lấy thông tin hồ sơ" }
+      );
     }
   },
 
@@ -35,12 +52,21 @@ const userService = {
   },
 
   // Lấy danh sách sinh viên (chỉ admin hoặc giáo viên)
-  getStudents: async () => {
+  getStudents: async (page = 1, pageSize = 10) => {
     try {
-      const response = await api.get('/students');
-      return response.data;
+      const response = await api.get("/students", {
+        params: { page, pageSize },
+      });
+      return {
+        data: response.data.items,
+        total: response.data.total,
+        page,
+        pageSize,
+      };
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Không thể lấy danh sách sinh viên');
+      throw new Error(
+        error.response?.data?.message || "Không thể lấy danh sách sinh viên"
+      );
     }
   },
 
@@ -50,17 +76,22 @@ const userService = {
       const response = await api.get(`/admin/teachers`);
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: "Không thể lấy danh sách giáo viên" };
+      throw (
+        error.response?.data || { message: "Không thể lấy danh sách giáo viên" }
+      );
     }
   },
 
   // Tạo người dùng mới (chỉ admin)
   createUser: async (userData) => {
     try {
-      const response = await api.post('/users', userData);
+      validateUserData(userData, true);
+      const response = await api.post("/users", userData);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Không thể tạo người dùng mới');
+      throw new Error(
+        error.response?.data?.message || "Không thể tạo người dùng mới"
+      );
     }
   },
 
@@ -70,7 +101,10 @@ const userService = {
       const response = await api.put(`/users/${userId}`, userData);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Không thể cập nhật thông tin người dùng');
+      throw new Error(
+        error.response?.data?.message ||
+          "Không thể cập nhật thông tin người dùng"
+      );
     }
   },
 
@@ -80,7 +114,9 @@ const userService = {
       const response = await api.delete(`/users/${userId}`);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Không thể xóa người dùng');
+      throw new Error(
+        error.response?.data?.message || "Không thể xóa người dùng"
+      );
     }
   },
 
@@ -105,7 +141,7 @@ const userService = {
         name: "Nguyễn Văn A",
         email: "nguyenvana@example.com",
         class: "CTK43",
-        status: "active"
+        status: "active",
       },
       {
         id: 2,
@@ -113,7 +149,7 @@ const userService = {
         name: "Trần Thị B",
         email: "tranthib@example.com",
         class: "CTK43",
-        status: "active"
+        status: "active",
       },
       {
         id: 3,
@@ -121,10 +157,10 @@ const userService = {
         name: "Lê Văn C",
         email: "levanc@example.com",
         class: "CTK43",
-        status: "inactive"
-      }
+        status: "inactive",
+      },
     ];
-  }
+  },
 };
 
 export default userService;

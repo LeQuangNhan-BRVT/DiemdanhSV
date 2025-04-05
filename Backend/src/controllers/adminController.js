@@ -11,7 +11,22 @@ exports.createUser = async (req, res) => {
   const transaction = await db.sequelize.transaction();
   try {
     const { username, password, role, email, studentId, name } = req.body;
+    const existingUser = await User.findOne({
+      where: {
+        [Op.or]: [{ username: finalUsername }, { email }],
+      },
+      transaction,
+    });
 
+    if (existingUser) {
+      await transaction.rollback();
+      return res.status(400).json({
+        error:
+          existingUser.username === finalUsername
+            ? "Tên đăng nhập đã tồn tại"
+            : "Email đã được sử dụng",
+      });
+    }
     //xac thuc
     if (!username || !password || !role) {
       await transaction.rollback();
@@ -63,7 +78,10 @@ exports.createUser = async (req, res) => {
       );
     }
     await transaction.commit();
-
+    if (role === "student" && !/^DH\d{8}$/.test(studentId)) {
+      await transaction.rollback();
+      return res.status(400).json({ error: "Mã SV phải có dạng DH + 6 số" });
+    }
     res.status(201).json({
       message: "Tao nguoi dung thanh cong",
       user: {
@@ -92,51 +110,109 @@ exports.adminLogin = async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) {
-      return res.status(400).json({ error: 'Hay nhap tai khoan va mat khau' });
+      return res.status(400).json({ error: "Hay nhap tai khoan va mat khau" });
     }
 
     const admin = await User.findOne({
       where: {
         username,
-        role: 'admin'
-      }
+        role: "admin",
+      },
     });
 
     if (!admin) {
-      return res.status(401).json({ error: 'Tai khoan admin khong ton tai' });
+      return res.status(401).json({ error: "Tai khoan admin khong ton tai" });
     }
 
     const isMatch = await bcrypt.compare(password, admin.password);
     if (!isMatch) {
-      return res.status(401).json({ error: 'Mat khau sai' });
+      return res.status(401).json({ error: "Mat khau sai" });
     }
 
     // JWT
     const payload = {
       id: admin.id,
-      role: admin.role
+      role: admin.role,
     };
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
 
     // Tra thong tin admin
     const responseUser = {
       id: admin.id,
       username: admin.username,
       role: admin.role,
-      email: admin.email
+      email: admin.email,
     };
 
     res.status(200).json({
-      message: 'Dang nhap thanh cong',
+      message: "Dang nhap thanh cong",
       user: responseUser,
-      token
+      token,
     });
-
   } catch (error) {
     console.log("Dang nhap admin that bai:", error);
-    res.status(500).json({ error: 'Server loi!' });
+    res.status(500).json({ error: "Server loi!" });
+  }
+};
+exports.getTeachers = async (req, res) => {
+  try {
+    const teachers = await db.User.findAll({
+      where: { role: "teacher" },
+      attributes: ["id", "username", "email"],
+    });
+    res.status(200).json(teachers);
+  } catch (error) {
+    res.status(500).json({ error: "Lỗi server khi lấy danh sách giảng viên" });
+  }
+};
+exports.updateTeacher = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username, email } = req.body;
+
+    const teacher = await User.findOne({
+      where: { id, role: "teacher" },
+    });
+    if (req.body.classes) {
+      await teacher.setClasses(req.body.classes, { transaction });
+    }
+    if (!teacher) {
+      return res.status(404).json({ error: "Giáo viên không tồn tại" });
+    }
+
+    const updatedTeacher = await teacher.update({ username, email });
+    res.json(updatedTeacher);
+  } catch (error) {
+    console.error("Lỗi cập nhật giáo viên:", error);
+    res.status(500).json({ error: "Lỗi server" });
   }
 };
 
+// Xóa giáo viên
+exports.deleteTeacher = async (req, res) => {
+  try {
+    const { id } = req.params;
 
+    const teacher = await User.findOne({
+      where: { id, role: "teacher" },
+    });
+    const classes = await teacher.getClasses();
+    if (classes.length > 0) {
+      return res.status(400).json({
+        error: "Không thể xóa giáo viên đang phụ trách lớp học",
+      });
+    }
+    if (!teacher) {
+      return res.status(404).json({ error: "Giáo viên không tồn tại" });
+    }
+
+    await teacher.destroy();
+    res.status(204).send();
+  } catch (error) {
+    console.error("Lỗi xóa giáo viên:", error);
+    res.status(500).json({ error: "Lỗi server" });
+  }
+};
