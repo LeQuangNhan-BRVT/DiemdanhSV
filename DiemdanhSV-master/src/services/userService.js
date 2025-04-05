@@ -37,7 +37,14 @@ const userService = {
       throw error.response?.data || { message: "Không thể cập nhật hồ sơ" };
     }
   },
-
+  updateUser: async (userId, userData) => {
+    try {
+      const response = await api.put(`/admin/users/${userId}`, userData); // Đúng route
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || "Cập nhật thất bại");
+    }
+  },
   // Đổi mật khẩu
   changePassword: async (currentPassword, newPassword) => {
     try {

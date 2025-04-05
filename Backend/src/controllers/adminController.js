@@ -78,9 +78,12 @@ exports.createUser = async (req, res) => {
       );
     }
     await transaction.commit();
-    if (role === "student" && !/^DH\d{8}$/.test(studentId)) {
-      await transaction.rollback();
-      return res.status(400).json({ error: "Mã SV phải có dạng DH + 6 số" });
+    if (role === "student") {
+      if (!/^DH\d{8}$/.test(studentId)) {
+        // ✅ Kiểm tra định dạng trước
+        await transaction.rollback();
+        return res.status(400).json({ error: "Mã SV phải có dạng DH + 8 số" });
+      }
     }
     res.status(201).json({
       message: "Tao nguoi dung thanh cong",
@@ -169,6 +172,7 @@ exports.getTeachers = async (req, res) => {
   }
 };
 exports.updateTeacher = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
   try {
     const { id } = req.params;
     const { username, email } = req.body;
@@ -183,7 +187,7 @@ exports.updateTeacher = async (req, res) => {
       return res.status(404).json({ error: "Giáo viên không tồn tại" });
     }
 
-    const updatedTeacher = await teacher.update({ username, email });
+    await transaction.commit(); // ✅ Commit khi thành công
     res.json(updatedTeacher);
   } catch (error) {
     console.error("Lỗi cập nhật giáo viên:", error);
