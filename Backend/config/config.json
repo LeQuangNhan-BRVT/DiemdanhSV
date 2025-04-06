@@ -1,6 +1,6 @@
 {
   "development": {
-    "username": "rodot",
+    "username": "root",
     "password": "",
     "database": "ddsv",
     "host": "127.0.0.1",
