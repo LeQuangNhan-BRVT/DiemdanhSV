@@ -71,7 +71,7 @@ const MainLayout = () => {
           </div>
         </Toolbar>
       </AppBar>
-      <Container component="main" sx={{ mt: 4, mb: 4, flex: 1 }}>
+      <Container component="main" sx={{ mt: 3, mb: 4, flex: 1 }}>
         
         <Outlet />
       </Container>
