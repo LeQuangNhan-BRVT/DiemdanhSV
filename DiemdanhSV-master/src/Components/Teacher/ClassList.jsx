@@ -10,7 +10,6 @@ import {
     TableRow,
     Typography,
     IconButton,
-    Button,
     CircularProgress,
     Alert,
     TablePagination
@@ -35,12 +34,11 @@ const ClassList = () => {
     const fetchClasses = async () => {
         try {
             const data = await classService.getTeacherClasses();
-            console.log('Fetched teacher classes:', data); // Debug log
             setClasses(data);
             setError(null);
-        } catch (err) {
-            console.error('Error fetching classes:', err); // Debug log
-            setError(err.message);
+        } catch (error) {
+            console.error("Error fetching classes:", error);
+            setError(error.message);
         } finally {
             setLoading(false);
         }
@@ -78,16 +76,9 @@ const ClassList = () => {
     return (
         <Box>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                <Typography variant="h5" component="h2">
-                    Danh sách lớp học của tôi
+                <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', color: '#3f51b5' }}>
+                    Danh sách lớp học
                 </Typography>
-                <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => navigate('/teacher/classes/create')}
-                >
-                    Tạo lớp mới
-                </Button>
             </Box>
 
             {error && (
@@ -96,14 +87,14 @@ const ClassList = () => {
                 </Alert>
             )}
 
-            <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+            <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '16px', boxShadow: '0 6px 20px rgba(0, 0, 0, 0.1)' }}>
                 <TableContainer>
                     <Table stickyHeader aria-label="sticky table">
                         <TableHead>
                             <TableRow>
-                                <TableCell>Tên lớp</TableCell>
-                                <TableCell>Số sinh viên</TableCell>
-                                <TableCell align="center">Thao tác</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>Tên lớp</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>Số sinh viên</TableCell>
+                                <TableCell align="center" sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>Thao tác</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -164,4 +155,4 @@ const ClassList = () => {
     );
 };
 
-export default ClassList; 
+export default ClassList;

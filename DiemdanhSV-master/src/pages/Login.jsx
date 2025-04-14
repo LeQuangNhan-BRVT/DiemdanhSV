@@ -34,7 +34,6 @@ const Login = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if the user is already logged in and redirect if so
     const token = localStorage.getItem("token");
     const user = localStorage.getItem("user");
     if (token && user) {
@@ -50,9 +49,7 @@ const Login = () => {
     try {
       const result = await login(username, password, role);
       if (result.success) {
-        // Retrieve user role from localStorage after login
         const userRole = localStorage.getItem("userRole");
-        // Redirect user based on the role and refresh the page
         if (userRole === "admin") {
           window.location.href = "/admin/dashboard";
         } else if (userRole === "teacher") {
@@ -75,28 +72,50 @@ const Login = () => {
   return (
     <Grid
       container
-      spacing={2}
+      spacing={0}
       alignItems="center"
       justifyContent="center"
-      style={{ minHeight: "100vh" }}
+      sx={{ minHeight: "100vh" }}
     >
       {/* Left: Image */}
-      <Grid item xs={12} md={6}>
+      <Grid
+        item
+        xs={12}
+        md={6}
+        sx={{
+          height: "100vh", // Đảm bảo chiều cao luôn chiếm toàn bộ màn hình
+          overflow: "hidden", // Ẩn phần hình ảnh vượt quá khung
+        }}
+      >
         <img
           src="https://navigates.vn/wp-content/uploads/2023/06/co-so-vat-chat-dai-hoc-cong-nghe-sai-gon-1.jpg"
           alt="Campus"
-          style={{ width: "140vh", height: "99.2vh", objectFit: "fill" }}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover", // Đảm bảo hình ảnh không bị méo
+          }}
         />
       </Grid>
-      <Grid item xs={12} md={6}>
-        <Box className="loginPageContainer" sx={{ p: 2, ml: 18 }}>
+
+      {/* Right: Login Form */}
+      <Grid
+        item
+        xs={12}
+        md={6}
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh", // Đảm bảo chiều cao luôn chiếm toàn bộ màn hình
+          p: { xs: 2, md: 4 }, // Padding linh hoạt cho các kích thước màn hình khác nhau
+        }}
+      >
+        <Box sx={{ width: "100%", maxWidth: 500 }}>
           <Paper
             elevation={4}
-            className="loginPaper"
             sx={{
-              width: "100%",
-              maxWidth: 500,
-              p: 3,
+              p: { xs: 2, md: 4 }, // Padding linh hoạt
               borderRadius: 2,
             }}
           >
@@ -104,21 +123,17 @@ const Login = () => {
               variant="h4"
               component="h1"
               gutterBottom
-              className="login-title"
+              sx={{ textAlign: "center" }}
             >
               Đăng nhập
             </Typography>
             <Divider sx={{ mb: 2 }} />
             {error && (
-              <Alert severity="error" className="loginAlert">
+              <Alert severity="error" sx={{ mb: 2 }}>
                 {error}
               </Alert>
             )}
-            <Box
-              component="form"
-              onSubmit={handleLogin}
-              className="loginFormBox"
-            >
+            <Box component="form" onSubmit={handleLogin}>
               <FormControl fullWidth margin="normal">
                 <InputLabel>Vai trò</InputLabel>
                 <Select
@@ -136,44 +151,9 @@ const Login = () => {
                     },
                   }}
                 >
-                  <MenuItem
-                    value="student"
-                    sx={{
-                      color: "#2e7d32 !important",
-                      "&:hover": { backgroundColor: "rgba(46, 125, 50, 0.08)" },
-                      "&.Mui-selected": {
-                        backgroundColor: "rgba(46, 125, 50, 0.12)",
-                      },
-                    }}
-                  >
-                    Sinh viên
-                  </MenuItem>
-
-                  <MenuItem
-                    value="teacher"
-                    sx={{
-                      color: "#ed6c02 !important",
-                      "&:hover": { backgroundColor: "rgba(237, 108, 2, 0.08)" },
-                      "&.Mui-selected": {
-                        backgroundColor: "rgba(237, 108, 2, 0.12)",
-                      },
-                    }}
-                  >
-                    Giáo viên
-                  </MenuItem>
-
-                  <MenuItem
-                    value="admin"
-                    sx={{
-                      color: "#d32f2f !important",
-                      "&:hover": { backgroundColor: "rgba(211, 47, 47, 0.08)" },
-                      "&.Mui-selected": {
-                        backgroundColor: "rgba(211, 47, 47, 0.12)",
-                      },
-                    }}
-                  >
-                    Quản trị viên
-                  </MenuItem>
+                  <MenuItem value="student">Sinh viên</MenuItem>
+                  <MenuItem value="teacher">Giáo viên</MenuItem>
+                  <MenuItem value="admin">Quản trị viên</MenuItem>
                 </Select>
               </FormControl>
               <TextField
@@ -225,10 +205,9 @@ const Login = () => {
                 type="submit"
                 variant="contained"
                 fullWidth
-                className="loginButtonMui"
                 size="large"
                 disabled={loading}
-                sx={{ mt: 5 }}
+                sx={{ mt: 3 }}
               >
                 {loading ? (
                   <CircularProgress size={24} color="inherit" />
